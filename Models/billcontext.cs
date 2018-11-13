@@ -45,6 +45,14 @@ namespace SimpleBillPay
                 entity.Property(e => e.Amount).IsRequired();
             });
 
+            modelBuilder.Entity<Payment>(entity =>
+            {
+                entity.HasKey(e => e.ID) ;
+                entity.Property(e => e.PaymentDate).IsRequired();
+                entity.Property(e => e.BillInstanceID).IsRequired();
+                entity.Property(e => e.Amount).IsRequired();
+            });
+
         }
     }
 }

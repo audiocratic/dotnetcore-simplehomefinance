@@ -31,7 +31,8 @@ namespace SimpleBillPay.Models
     {
         public int ID { get; set; }
         public decimal Amount { get; set; }
-        public virtual BillInstance Bill { get; set; }
+        public int BillInstanceID { get; set; }
+        public virtual BillInstance BillInstance { get; set; }
         public DateTime PaymentDate { get; set; }
     }
 }
