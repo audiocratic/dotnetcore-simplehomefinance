@@ -1,0 +1,96 @@
+@page
+@model SimpleBillPay.Pages.Bills.CreateModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<style>
+    .spacer-md {
+        margin-top: 30px;
+    }
+</style>
+
+
+<h2>Add New Bill</h2>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label 
+                    asp-for="BillInstance.BillTemplate.Name" 
+                    class="control-label">What name should we give this bill?</label>
+                <input asp-for="BillInstance.BillTemplate.Name" class ="form-control" />
+                <span asp-validation-for="BillInstance.BillTemplate.Name" class="text-danger"></span>
+            </div>
+            <div class="form-group spacer-md">
+                <label>Does this bill repeat?</label>
+                <div class="form-check-inline">
+                    <label class="form-check-label">
+                        <input type="radio" class="form-check-input" name="is-repeating" value="false" checked>No
+                    </label>
+                </div>
+                <div class="form-check-inline">
+                    <label class="form-check-label">
+                        <input type="radio" class="form-check-input" name="is-repeating" value="true">Yes
+                    </label>
+                </div>
+            </div>
+            <div class="form-group spacer-md hidden frequency-container">
+                <span><b>This bill repeats every &nbsp</b></span>
+                <input 
+                    asp-for="BillInstance.BillTemplate.FrequencyInMonths" 
+                    class ="form-control"
+                    id="frequency-in-months"
+                    maxlength="2"
+                    style="max-width:64px; display:inline-block"
+                    type="text"
+                    value="0" />
+                <span><b>&nbsp months.</b></span>
+                <span asp-validation-for="BillInstance.BillTemplate.FrequencyInMonths" class="text-danger"></span>
+            </div>
+            <div class="form-group spacer-md">
+                <label 
+                    asp-for="BillInstance.Amount" 
+                    class="control-label">How much is this bill for?</label>
+                <input asp-for="BillInstance.Amount" class="form-control" />
+                <span asp-validation-for="BillInstance.Amount" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="BillInstance.DueDate" class="control-label">When is this bill due?</label>
+                <input asp-for="BillInstance.DueDate" id="DueDate" class="form-control" />
+                <span asp-validation-for="BillInstance.DueDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-default" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-page="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        $("#DueDate").removeAttr("type");
+        $("#DueDate").datepicker({"autoclose":true});
+        
+        $("input[name='is-repeating']").change(function(e) {
+            if(e.target.checked) {
+                if(e.target.value == "true"){
+                    $("div.frequency-container").removeClass("hidden");
+                    $("#frequency-in-months").val("");
+                } else {
+                    $("div.frequency-container").addClass("hidden");
+                    $("#frequency-in-months").val("0");
+                }
+            }
+        });
+    </script>
+    
+}

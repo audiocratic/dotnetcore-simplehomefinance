@@ -1,0 +1,40 @@
+@page
+@model SimpleBillPay.Pages.Bills.DeleteModel
+
+@{
+    ViewData["Title"] = "Delete";
+}
+
+<h2>Delete</h2>
+
+<h3>Are you sure you want to delete this?</h3>
+<div>
+    <h4>BillInstance</h4>
+    <hr />
+    <dl class="dl-horizontal">
+        <dt>
+            @Html.DisplayNameFor(model => model.BillInstance.BillTemplate)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.BillInstance.BillTemplate.Name)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.BillInstance.Amount)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.BillInstance.Amount)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.BillInstance.DueDate)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.BillInstance.DueDate)
+        </dd>
+    </dl>
+    
+    <form method="post">
+        <input type="hidden" asp-for="BillInstance.ID" />
+        <input type="submit" value="Delete" class="btn btn-default" /> |
+        <a asp-page="./Index">Back to List</a>
+    </form>
+</div>

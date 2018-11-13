@@ -1,0 +1,61 @@
+@page
+@model SimpleBillPay.Pages.Bills.IndexModel
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h2>Manage Bills</h2>
+
+<p>
+    <a asp-page="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.BillInstance[0].BillTemplate.Name)
+            </th>
+            <th>
+                Due Date
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.BillInstance[0].BillTemplate.Amount)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model.BillInstance) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.BillTemplate.Name)
+            </td>
+            <td>
+                @if(item.DueDate != null)
+                {
+                    @item.DueDate.ToString("MM/dd/yyyy")
+                }
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.BillTemplate.Amount)
+            </td>
+            <td>
+                <a asp-page="./Edit" asp-route-id="@item.ID">Edit</a> |
+                <a asp-page="./Details" asp-route-id="@item.ID">Details</a> |
+                <a asp-page="./Delete" asp-route-id="@item.ID">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>
+@* Janky page navigation *@
+@if(Model.PageNumber > 1)
+{
+    <a href="./Bills?pageNumber=@(Model.PageNumber - 1)">Previous</a>
+}
+
+@if(((float)Model.TotalBills / 50) > Model.PageNumber)
+{
+    <a href="./Bills?pageNumber=@(Model.PageNumber + 1)">Next</a>
+}
