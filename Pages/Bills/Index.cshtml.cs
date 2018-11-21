@@ -14,16 +14,14 @@ using SimpleBillPay.Areas.Identity.Data;
 namespace SimpleBillPay.Pages.Bills
 {
     [Authorize]
-    public class IndexModel : PageModel
+    public class IndexModel : BillPageModel
     {
-        private readonly SimpleBillPay.BudgetContext _context;
-
         public int PageNumber { get; set; }
         public int TotalBills { get; set; }
         
-        public IndexModel(SimpleBillPay.BudgetContext context)
+        public IndexModel(SimpleBillPay.BudgetContext context) : base(context)
         {
-            _context = context;
+
         }
 
         public IList<BillInstance> BillInstance { get; set; }
@@ -44,12 +42,17 @@ namespace SimpleBillPay.Pages.Bills
 
             TotalBills = _context.BillInstance
                 .Include(b => b.BillTemplate)
-                .Where(b => b.BillTemplate.User.UserName == user.UserName)
+                .Where(b => 
+                        b.BillTemplate.User.UserName == user.UserName
+                    &&  b.DueDate <= DateTime.Today.AddYears(5)
+                )
                 .Count();
 
             BillInstance = await _context.BillInstance
                 .Include(b => b.BillTemplate)
-                .Where(b => b.BillTemplate.User.UserName == user.UserName)
+                .Where(b => 
+                        b.BillTemplate.User.UserName == user.UserName
+                    &&  b.DueDate <= DateTime.Today.AddYears(5))
                 .OrderBy(b => b.DueDate)
                 .Skip((PageNumber - 1) * 50).Take(50)
                 .ToListAsync();

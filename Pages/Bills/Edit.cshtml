@@ -5,39 +5,133 @@
     ViewData["Title"] = "Edit";
 }
 
-<h2>Edit Bills</h2>
+<style>
+    .spacer-md {
+        margin-top: 30px;
+    }
+</style>
+
+
+<h2>Edit Bill</h2>
 <hr />
 <div class="row">
     <div class="col-md-4">
         <form method="post">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" asp-for="BillInstance.ID" />
             <div class="form-group">
-                <label asp-for="BillInstance.BillTemplateID" class="control-label"></label>
-                <select asp-for="BillInstance.BillTemplateID" class="form-control" asp-items="ViewBag.BillTemplateID"></select>
-                <span asp-validation-for="BillInstance.BillTemplateID" class="text-danger"></span>
+                <label 
+                    asp-for="BillInstance.BillTemplate.Name" 
+                    class="control-label">What name should we give this bill?</label>
+                <input asp-for="BillInstance.BillTemplate.Name" class ="form-control" />
+                <span asp-validation-for="BillInstance.BillTemplate.Name" class="text-danger"></span>
             </div>
-            <div class="form-group">
-                <label asp-for="BillInstance.Amount" class="control-label"></label>
+            <div class="form-group spacer-md">
+                <label>Does this bill repeat?</label>
+                <div class="form-check-inline">
+                    <label class="form-check-label">
+                        <input 
+                            type="radio" 
+                            class="form-check-input" 
+                            name="is-repeating" 
+                            value="false" 
+                            @(Model.BillInstance.BillTemplate.FrequencyInMonths == 0 ? "checked" : string.Empty)>No
+                    </label>
+                </div>
+                <div class="form-check-inline">
+                    <label class="form-check-label">
+                        <input 
+                            type="radio" 
+                            class="form-check-input" 
+                            name="is-repeating" 
+                            value="true"
+                            @(Model.BillInstance.BillTemplate.FrequencyInMonths > 0 ? "checked" : string.Empty)>Yes
+                    </label>
+                </div>
+            </div>
+            <div class="form-group spacer-md frequency-container @(Model.BillInstance.BillTemplate.FrequencyInMonths == 0 ? "hidden" : string.Empty)">
+                <span><b>This bill repeats every &nbsp</b></span>
+                <input 
+                    asp-for="BillInstance.BillTemplate.FrequencyInMonths" 
+                    class ="form-control"
+                    id="frequency-in-months"
+                    maxlength="2"
+                    style="max-width:64px; display:inline-block"
+                    type="text" />
+                <span><b>&nbsp months.</b></span>
+                <span asp-validation-for="BillInstance.BillTemplate.FrequencyInMonths" class="text-danger"></span>
+            </div>
+            <div class="form-group spacer-md">
+                <label 
+                    asp-for="BillInstance.Amount" 
+                    class="control-label">How much is this bill for?</label>
                 <input asp-for="BillInstance.Amount" class="form-control" />
                 <span asp-validation-for="BillInstance.Amount" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="BillInstance.DueDate" class="control-label"></label>
-                <input asp-for="BillInstance.DueDate" class="form-control" />
+                <label asp-for="BillInstance.DueDate" class="control-label">When is this bill due?</label>
+                <input 
+                    asp-for="BillInstance.DueDate"
+                    id="DueDate"
+                    type="text"
+                    class="form-control"
+                    value="@Model.BillInstance.DueDate.ToString("MM/dd/yyyy")" />
                 <span asp-validation-for="BillInstance.DueDate" class="text-danger"></span>
             </div>
+            @if(Model.BillInstance.BillTemplate.FrequencyInMonths > 0)
+            {
+                <div class="form-group">
+                    <label asp-for="ChangeEntireSeries" class="control-label">
+                        This bill repeats. Do you want to apply this change to every bill in the series?
+                    </label>
+                    <div class="form-check-inline">
+                        <label class="form-check-label">
+                            <input 
+                                type="radio" 
+                                class="form-check-input"
+                                asp-for="ChangeEntireSeries"
+                                value="false" 
+                                checked>No
+                        </label>
+                    </div>
+                    <div class="form-check-inline">
+                        <label class="form-check-label">
+                            <input 
+                                type="radio" 
+                                class="form-check-input" 
+                                asp-for="ChangeEntireSeries"
+                                value="true">Yes
+                        </label>
+                    </div>
+                </div>
+            }
+
             <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-default" />
+                <input type="submit" value="Save Changes" class="btn btn-default" />
             </div>
         </form>
     </div>
 </div>
 
 <div>
-    <a asp-page="./Index">Back to List</a>
+    <a asp-page="Index">Back to List</a>
 </div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        $("#DueDate").datepicker({"autoclose":true});
+        
+        $("input[name='is-repeating']").change(function(e) {
+            if(e.target.checked) {
+                if(e.target.value == "true"){
+                    $("div.frequency-container").removeClass("hidden");
+                    $("#frequency-in-months").val("");
+                } else {
+                    $("div.frequency-container").addClass("hidden");
+                    $("#frequency-in-months").val("0");
+                }
+            }
+        });
+    </script>
+    
 }

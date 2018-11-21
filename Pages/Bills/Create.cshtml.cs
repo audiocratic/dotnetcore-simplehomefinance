@@ -12,13 +12,11 @@ using SimpleBillPay.Areas.Identity.Data;
 
 namespace SimpleBillPay.Pages.Bills
 {
-    public class CreateModel : PageModel
+    public class CreateModel : BillPageModel
     {
-        private readonly SimpleBillPay.BudgetContext _context;
 
-        public CreateModel(SimpleBillPay.BudgetContext context)
+        public CreateModel(SimpleBillPay.BudgetContext context) : base(context)
         {
-            _context = context;
         }
 
         public IActionResult OnGet()
@@ -47,25 +45,13 @@ namespace SimpleBillPay.Pages.Bills
 
             //Bill instance amount should match template amount
             BillInstance.BillTemplate.Amount = BillInstance.Amount;
+            BillInstance.Name = BillInstance.BillTemplate.Name;
 
             _context.BillInstance.Add(BillInstance);
 
             if(BillInstance.BillTemplate.FrequencyInMonths > 0)
             {
-                int instancesToAdd = 360 / BillInstance.BillTemplate.FrequencyInMonths;
-
-                for(int i = 1; i <= instancesToAdd; i++)
-                {
-                    DateTime dueDate = BillInstance.DueDate.AddMonths(i * BillInstance.BillTemplate.FrequencyInMonths);
-
-                    BillInstance instance = new BillInstance();
-
-                    instance.BillTemplate = BillInstance.BillTemplate;
-                    instance.DueDate = dueDate;
-                    instance.Amount = BillInstance.Amount;
-
-                    _context.BillInstance.Add(instance);
-                }
+                CreateSeries(BillInstance);
             }
             
             //Insert

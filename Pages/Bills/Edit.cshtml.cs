@@ -11,17 +11,28 @@ using SimpleBillPay.Models;
 
 namespace SimpleBillPay.Pages.Bills
 {
-    public class EditModel : PageModel
-    {
-        private readonly SimpleBillPay.BudgetContext _context;
-
-        public EditModel(SimpleBillPay.BudgetContext context)
+    public class EditModel : BillPageModel
+    {   
+        public EditModel(SimpleBillPay.BudgetContext context) : base(context)
         {
-            _context = context;
         }
 
         [BindProperty]
         public BillInstance BillInstance { get; set; }
+
+        [BindProperty]
+        public bool ChangeEntireSeries { get; set; }
+
+        
+
+        public async Task RebuildSeries(BillInstance instance)
+        {
+            List<BillInstance> instances = await FetchEditableBillInstancesAsync(instance);
+
+            _context.RemoveRange(instances);
+
+            if(BillInstance.BillTemplate.FrequencyInMonths > 0) CreateSeries(instance);
+        }
 
         public async Task<IActionResult> OnGetAsync(int? id)
         {
@@ -30,25 +41,48 @@ namespace SimpleBillPay.Pages.Bills
                 return NotFound();
             }
 
-            BillInstance = await _context.BillInstance
-                .Include(b => b.BillTemplate).FirstOrDefaultAsync(m => m.ID == id);
+            BillInstance = await GetBillInstanceAsync((int)id);
 
             if (BillInstance == null)
             {
                 return NotFound();
             }
-           ViewData["BillTemplateID"] = new SelectList(_context.BillTemplate, "ID", "Name");
+
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAsync()
+        public async Task<IActionResult> OnPostAsync(int? id)
         {
-            if (!ModelState.IsValid)
+            if (!ModelState.IsValid || id == null)
             {
                 return Page();
             }
 
-            _context.Attach(BillInstance).State = EntityState.Modified;
+            BillInstance instance = await GetBillInstanceAsync((int)id);
+
+            if(instance == null) return NotFound(); //Make sure this bill is in the DB and accessible to user
+            
+            _context.Attach(instance).State = EntityState.Modified;
+
+            //Overwrite properties from form
+            instance.Amount = BillInstance.Amount;
+            instance.DueDate = BillInstance.DueDate;
+            instance.Name = BillInstance.BillTemplate.Name;
+
+            bool isTemplated = ((ChangeEntireSeries && BillInstance.BillTemplate.FrequencyInMonths > 0) ||
+            (instance.BillTemplate.FrequencyInMonths == 0 && BillInstance.BillTemplate.FrequencyInMonths > 0));
+
+            if(isTemplated) instance.BillTemplate.FrequencyInMonths = BillInstance.BillTemplate.FrequencyInMonths;
+            
+            instance.BillTemplate.Name = BillInstance.BillTemplate.Name;
+
+
+            if(ChangeEntireSeries)
+            {
+                await RebuildSeries(instance);
+            }
+            
+
 
             try
             {

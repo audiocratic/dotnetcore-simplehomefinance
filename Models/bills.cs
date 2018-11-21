@@ -1,4 +1,6 @@
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using SimpleBillPay.Areas.Identity.Data;
 using System.ComponentModel.DataAnnotations;
 
@@ -22,8 +24,10 @@ namespace SimpleBillPay.Models
         public int ID { get; set; }
         public int BillTemplateID { get; set; }
         public virtual BillTemplate BillTemplate { get; set; }
+        public string Name { get; set; }
         public decimal Amount { get; set; }
         public DateTime DueDate { get; set; }
+        public IList<Payment> Payments { get; set; }
 
     }
 

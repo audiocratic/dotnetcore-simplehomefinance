@@ -17,6 +17,7 @@ namespace SimpleBillPay
         public DbSet<User> AspNetUsers { get; set; }
         public DbSet<BillTemplate> BillTemplate { get; set; }
         public DbSet<BillInstance> BillInstance { get; set; }
+        public DbSet<Payment> Payments { get; set; }
         
         public BudgetContext(DbContextOptions<BudgetContext> options) : base(options)
         {
@@ -43,14 +44,17 @@ namespace SimpleBillPay
                 entity.Property(e => e.DueDate).IsRequired();
                 entity.Property(e => e.BillTemplateID).IsRequired();
                 entity.Property(e => e.Amount).IsRequired();
+                entity.Property(e => e.Name).IsRequired();
+                entity.HasMany(e => e.Payments).WithOne(e => e.BillInstance);
             });
 
             modelBuilder.Entity<Payment>(entity =>
             {
                 entity.HasKey(e => e.ID) ;
                 entity.Property(e => e.PaymentDate).IsRequired();
-                entity.Property(e => e.BillInstanceID).IsRequired();
+                entity.Property(e => e.BillInstanceID ).IsRequired();
                 entity.Property(e => e.Amount).IsRequired();
+                entity.HasOne(e => e.BillInstance).WithMany(e => e.Payments);
             });
 
         }
