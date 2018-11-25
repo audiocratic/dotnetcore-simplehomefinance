@@ -31,7 +31,7 @@ namespace SimpleBillPay.Pages.Bills
 
             //Check if pageNumber was not supplied or is less than zero
             pageNumber = pageNumber ?? 1;
-            if(pageNumber < 0) pageNumber = 1;
+            if(pageNumber < 1) pageNumber = 1;
             PageNumber = (int)pageNumber;
 
             //Get current user

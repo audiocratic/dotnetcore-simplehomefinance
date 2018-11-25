@@ -11,7 +11,7 @@ public class BillPageModel : PageModel
 {
     protected readonly SimpleBillPay.BudgetContext _context;
 
-    public BillPageModel(SimpleBillPay.BudgetContext context)
+    public BillPageModel(SimpleBillPay.BudgetContext context) : base()
     {
         _context = context;
     }

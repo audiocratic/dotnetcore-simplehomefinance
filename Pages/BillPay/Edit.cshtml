@@ -1,0 +1,173 @@
+@page
+@model SimpleBillPay.Pages.BillPay.EditModel
+
+@{
+    ViewData["Title"] = "Edit";
+}
+
+<div class="row">
+    <div class="col-md-6">
+        <form method="post">
+            <div class="row spacer-sm">
+                <h2>Pay Bills</h2>
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <input type="hidden" asp-for="BillPay.ID" />
+                <div class="col-lg-6">
+                    <div class="form-group">
+                        <label asp-for="BillPay.BillPayDate" class="control-label">Scheduled Pay Date</label>
+                        <input 
+                            id="BillPayDate" 
+                            asp-for="BillPay.BillPayDate"
+                            class="form-control" 
+                            type="text"
+                            value=@Model.BillPay.BillPayDate.ToString("MM/dd/yyy") />
+                        <span asp-validation-for="BillPay.BillPayDate" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <label asp-for="BillPay.StartingAmount" class="control-label">Starting Balance</label>
+                        <input asp-for="BillPay.StartingAmount" class="form-control" />
+                        <span asp-validation-for="BillPay.StartingAmount" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="panel panel-default spacer-sm">
+                        <div class="panel-heading text-center">
+                            Ending Balance
+                        </div>
+                        <div class="panel-body text-center">
+                            <h4>@Model.BillPay.EndingAmount.ToString("0.00")</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row spacer-sm">
+                <h2>Scheduled Payments</h2>
+                <table class="table">
+                    <tr>
+                        <th></th>
+                        <th>Due Date</th>
+                        <th>Name</th>
+                        <th>Remaining Balance</th>
+                        <th>Payment Amount</th>
+                        <th></th>
+                    </tr>
+                    @{ int i = 0; }
+                    @foreach(SimpleBillPay.Models.Payment payment in Model.BillPay.Payments.OrderBy(p => p.BillInstance.DueDate).ToList())
+                    {
+                        <tr @Html.Raw((payment.IsConfirmed ? "class=\"success\"" : ""))>
+                            <td>
+                            @if(!payment.IsConfirmed)
+                            {
+                                <button
+                                    class="btn btn-success" 
+                                    formmethod="post"
+                                    asp-page-handler="ConfirmPayment" 
+                                    asp-route-paymentID=@payment.ID
+                                    asp-route-billPayID=@Model.BillPay.ID>
+                                    <span class="glyphicon glyphicon-check"></span>
+                                </button>
+                            }
+                            else
+                            {
+                                <button
+                                    class="btn btn-default" 
+                                    formmethod="post"
+                                    asp-page-handler="ConfirmPayment" 
+                                    asp-route-paymentID=@payment.ID
+                                    asp-route-billPayID=@Model.BillPay.ID>
+                                    <span class="glyphicon glyphicon-remove"></span>
+                                </button>
+                            }
+                            </td>
+                            <td>@payment.BillInstance.DueDate.ToString("MM/dd/yyyy")</td>
+                            <td>@payment.BillInstance.Name</td>
+                            <td>@((
+                                    payment.BillInstance.Amount 
+                                    - payment.BillInstance.Payments
+                                        .Where(p => p.ID != payment.ID && p.ID < payment.ID)
+                                        .Sum(p => p.Amount)
+                                ).ToString("0.00"))</td>
+                            <td>
+                                <input 
+                                    asp-for="BillPay.Payments[i].Amount"
+                                    type="text" 
+                                    class="form-control"
+                                    value=@payment.Amount.ToString("0.00") />
+                            </td>
+                            <td>
+                                <button
+                                    class="btn btn-danger" 
+                                    formmethod="post"
+                                    asp-page-handler="RemovePayment" 
+                                    asp-route-paymentID=@payment.ID
+                                    asp-route-billPayID=@Model.BillPay.ID
+                                    value="Remove" >
+                                    <span class="glyphicon glyphicon-trash"></span>
+                                </button>
+
+                            
+
+
+                                <input 
+                                    type="hidden"
+                                    asp-for="BillPay.Payments[i].ID"
+                                    value=@payment.ID />
+                            </td>
+                        </tr>
+
+                        i++;
+                    }
+                </table>
+                @if(Model.BillPay.Payments == null || Model.BillPay.Payments.Count == 0)
+                {
+                    <div class="alert alert-warning" role="alert">No payments have been scheduled.</div>
+                }
+                <div class="form-group">
+                    <input type="submit" value="Save" class="btn btn-default" />
+                </div>
+            </div>
+        </form>
+    </div>
+    <form method="post">
+        <div class="col-md-5 col-md-offset-1 spacer-sm">
+            <h2>Upcoming Bills</h2>
+            <table class="table">
+                <tr>
+                    <th>Due Date</th>
+                    <th>Name</th>
+                    <th>Remaining Balance</th>
+                    <th></th>
+                </tr>
+                @foreach(SimpleBillPay.Models.BillInstance bill in Model.UpcomingBills)
+                {
+                    <tr>
+                        <td>@bill.DueDate.ToString("MM/dd/yyyy")</td>
+                        <td>@bill.Name</td>
+                        <td>@((bill.Amount - @bill.Payments.Sum(p => p.Amount)).ToString("0.00"))</td>
+                        <td>
+                            <button 
+                                formmethod="post"
+                                class="btn btn-success" 
+                                asp-page-handler="AddPayment" 
+                                asp-route-billInstanceID=@bill.ID
+                                asp-route-billPayID=@Model.BillPay.ID>
+                                <span class="glyphicon glyphicon-plus"></span>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </table>
+        </div>
+    </form>
+</div>
+
+<div>
+    <a asp-page="./Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        $("#BillPayDate").datepicker({"autoclose":true});
+    </script>
+}

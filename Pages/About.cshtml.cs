@@ -13,7 +13,7 @@ namespace SimpleBillPay.Pages
 
         public void OnGet()
         {
-            Message = "Your application description page.";
+            Message = "Simple Bill Pay";
         }
     }
 }

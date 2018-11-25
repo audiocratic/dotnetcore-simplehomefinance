@@ -17,9 +17,12 @@ namespace SimpleBillPay.Areas.Identity
             builder.ConfigureServices((context, services) => {
                 
                 services.AddDbContext<AuthenticationContext>(options =>
+                {
+                    string connString = System.Diagnostics.Debugger.IsAttached ? "Debug" : "BudgetContext";
+                                  
                     options.UseMySql(
-                        context.Configuration.GetConnectionString("BudgetContext"))
-                );
+                        context.Configuration.GetConnectionString(connString));
+                });
 
                 services.AddDefaultIdentity<User>()
                     .AddEntityFrameworkStores<AuthenticationContext>();

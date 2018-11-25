@@ -1,0 +1,46 @@
+@page
+@model SimpleBillPay.Pages.BillPay.CreateModel
+
+@{
+    ViewData["Title"] = "Create";
+}
+
+<div class="row">
+    <form method="post">
+        <div class="col-md-4">
+            <h2>Create</h2>
+            <h4>BillPay</h4>
+            <hr />
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="BillPay.BillPayDate" class="control-label">Payment Date</label>
+                <input 
+                    asp-for="BillPay.BillPayDate"
+                    id="BillPayDate" 
+                    class="form-control"
+                    type="text"/>
+                <span asp-validation-for="BillPay.BillPayDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="BillPay.StartingAmount" class="control-label">Starting Balance</label>
+                <input asp-for="BillPay.StartingAmount" class="form-control" />
+                <span asp-validation-for="BillPay.StartingAmount" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-default" />
+            </div>
+        </div>
+    </form>
+</div>
+
+<div>
+    <a asp-page="Index">Back to List</a>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        $("#BillPayDate").datepicker({"autoclose": true});
+    </script>
+    
+}

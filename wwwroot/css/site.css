@@ -33,3 +33,15 @@ body {
         display: none;
     }
 }
+
+.spacer-sm {
+    margin-top: 24px;
+}
+
+.spacer-md {
+    margin-top: 48px;
+}
+
+.spacer-lg {
+    margin-top: 64px;
+}

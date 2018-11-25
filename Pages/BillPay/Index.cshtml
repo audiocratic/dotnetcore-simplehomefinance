@@ -1,0 +1,96 @@
+@page
+@model SimpleBillPay.Pages.BillPay.IndexModel
+
+@{
+    ViewData["Title"] = "Summary";
+}
+<style>
+    td.summary {
+        padding-left: 64px;
+    }
+</style>
+<h2>Summary</h2>
+
+<p>
+    <a asp-page="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                Payment Date
+            </th>
+            <th>
+                Starting Balance
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (SimpleBillPay.Models.BillPay billPay in Model.BillPays) 
+{
+        <tr class="active">
+            <td>
+                @billPay.BillPayDate.ToString("MM/dd/yyyy")
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => billPay.StartingAmount)
+            </td>
+            <td>
+                <a asp-page="./Edit" asp-route-id="@billPay.ID">Edit</a> |
+                <a asp-page="./Details" asp-route-id="@billPay.ID">Details</a> |
+                <a asp-page="./Delete" asp-route-id="@billPay.ID">Delete</a>
+            </td>
+        </tr>
+    @if(billPay.Payments != null && billPay.Payments.Count > 0)
+    {
+        <tr>
+            <td colspan="3" class="summary">
+                <table class="table table-condensed">
+                    <thead>
+                        <tr>
+                            <th>
+                                Bill Due Date
+                            </th>
+                            <th>
+                                Bill Name
+                            </th>
+                            <th>
+                                Balance
+                            </th>
+                            <th>
+                                Payment Amount
+                            </th>
+                        </tr>
+                    </thead>
+                @foreach(SimpleBillPay.Models.Payment payment in billPay.Payments)
+                {
+                    <tr @if(payment.DateConfirmed != null && payment.DateConfirmed > DateTime.MinValue)
+                        { 
+                            <text>class="success"</text>
+                        } >
+                        <td>
+                            @payment.BillInstance.DueDate.ToString("MM/dd/yyyy")
+                        </td>
+                        <td>
+                            @payment.BillInstance.Name
+                        </td>
+                        <td>
+                            @payment.PriorBalance.ToString("0.00")
+                        </td>
+                        <td>
+                            @payment.Amount.ToString("0.00")
+                        </td>
+                    </tr>
+                }
+                </table>
+            </td>
+        </tr>
+    }
+}
+    </tbody>
+</table>
+@if(Model.BillPays.Count == 0)
+{
+    <div class="alert alert-warning" role="alert">No payments scheduled.</div>
+}

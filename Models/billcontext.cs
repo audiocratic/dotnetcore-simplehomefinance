@@ -19,11 +19,7 @@ namespace SimpleBillPay
         public DbSet<BillInstance> BillInstance { get; set; }
         public DbSet<Payment> Payments { get; set; }
         
-        public BudgetContext(DbContextOptions<BudgetContext> options) : base(options)
-        {
-            
-
-        }
+        public BudgetContext(DbContextOptions<BudgetContext> options) : base(options) {}
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -57,6 +53,19 @@ namespace SimpleBillPay
                 entity.HasOne(e => e.BillInstance).WithMany(e => e.Payments);
             });
 
+            modelBuilder.Entity<BillPay>(entity =>    
+            {
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.BillPayDate).IsRequired();
+                entity.Property(e => e.StartingAmount).IsRequired();
+                entity.Property(e => e.UserId).IsRequired();
+                entity.HasOne(e => e.User);
+                entity.HasMany(e => e.Payments);
+                entity.HasIndex(e=> new {e.UserId, e.BillPayDate}).IsUnique();
+            });
+
         }
+
+        public DbSet<SimpleBillPay.Models.BillPay> BillPay { get; set; }
     }
 }

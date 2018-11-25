@@ -78,6 +78,26 @@ namespace SimpleBillPay.Migrations.Budget
                     b.ToTable("BillInstance");
                 });
 
+            modelBuilder.Entity("SimpleBillPay.Models.BillPay", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd();
+
+                    b.Property<DateTime>("BillPayDate");
+
+                    b.Property<decimal>("StartingAmount");
+
+                    b.Property<string>("UserId")
+                        .IsRequired();
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("UserId", "BillPayDate")
+                        .IsUnique();
+
+                    b.ToTable("BillPay");
+                });
+
             modelBuilder.Entity("SimpleBillPay.Models.BillTemplate", b =>
                 {
                     b.Property<int>("ID")
@@ -109,11 +129,17 @@ namespace SimpleBillPay.Migrations.Budget
 
                     b.Property<int>("BillInstanceID");
 
+                    b.Property<int?>("BillPayID");
+
+                    b.Property<DateTime>("DateConfirmed");
+
                     b.Property<DateTime>("PaymentDate");
 
                     b.HasKey("ID");
 
                     b.HasIndex("BillInstanceID");
+
+                    b.HasIndex("BillPayID");
 
                     b.ToTable("Payments");
                 });
@@ -123,6 +149,14 @@ namespace SimpleBillPay.Migrations.Budget
                     b.HasOne("SimpleBillPay.Models.BillTemplate", "BillTemplate")
                         .WithMany()
                         .HasForeignKey("BillTemplateID")
+                        .OnDelete(DeleteBehavior.Cascade);
+                });
+
+            modelBuilder.Entity("SimpleBillPay.Models.BillPay", b =>
+                {
+                    b.HasOne("SimpleBillPay.Areas.Identity.Data.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade);
                 });
 
@@ -140,6 +174,10 @@ namespace SimpleBillPay.Migrations.Budget
                         .WithMany("Payments")
                         .HasForeignKey("BillInstanceID")
                         .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("SimpleBillPay.Models.BillPay")
+                        .WithMany("Payments")
+                        .HasForeignKey("BillPayID");
                 });
 #pragma warning restore 612, 618
         }
