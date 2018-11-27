@@ -5,15 +5,30 @@
     ViewData["Title"] = "Summary";
 }
 <style>
-    td.summary {
-        padding-left: 64px;
+    table.table td.summary {
+        padding-left: 48px;
     }
 </style>
 <h2>Summary</h2>
 
-<p>
-    <a asp-page="Create">Create New</a>
-</p>
+<div class="pull-left">
+    <a 
+        asp-page="Create"
+        class="btn btn-success">
+       <span class="glyphicon glyphicon-plus"></span>&nbsp Create New
+    </a>
+</div>
+<div class="pull-right">
+    <a
+        asp-page="Index"
+        asp-route-direction=@( Model.Direction == IndexModel.ListDirection.FUTURE ? "retro" : "future")
+        class="btn btn-info">
+        <span
+            class="glyphicon glyphicon-@( Model.Direction == IndexModel.ListDirection.FUTURE ? "time" : "calendar" )"></span>
+            &nbsp@(Model.Direction == IndexModel.ListDirection.FUTURE ? "History" : "Scheduled")
+    </a>
+</div>
+
 <table class="table">
     <thead>
         <tr>
@@ -44,7 +59,7 @@
         </tr>
     @if(billPay.Payments != null && billPay.Payments.Count > 0)
     {
-        <tr>
+        <tr class="summary">
             <td colspan="3" class="summary">
                 <table class="table table-condensed">
                     <thead>
@@ -63,26 +78,30 @@
                             </th>
                         </tr>
                     </thead>
-                @foreach(SimpleBillPay.Models.Payment payment in billPay.Payments)
-                {
-                    <tr @if(payment.DateConfirmed != null && payment.DateConfirmed > DateTime.MinValue)
-                        { 
-                            <text>class="success"</text>
-                        } >
-                        <td>
-                            @payment.BillInstance.DueDate.ToString("MM/dd/yyyy")
-                        </td>
-                        <td>
-                            @payment.BillInstance.Name
-                        </td>
-                        <td>
-                            @payment.PriorBalance.ToString("0.00")
-                        </td>
-                        <td>
-                            @payment.Amount.ToString("0.00")
-                        </td>
-                    </tr>
-                }
+                    <tbody>
+                    @foreach(SimpleBillPay.Models.Payment payment in billPay.Payments
+                        .OrderBy(p => p.BillInstance.DueDate)
+                        .ToList())
+                    {
+                        <tr @if(payment.DateConfirmed != null && payment.DateConfirmed > DateTime.MinValue)
+                            { 
+                                <text>class="success"</text>
+                            } >
+                            <td>
+                                @payment.BillInstance.DueDate.ToString("MM/dd/yyyy")
+                            </td>
+                            <td>
+                                @payment.BillInstance.Name
+                            </td>
+                            <td>
+                                @payment.PriorBalance.ToString("0.00")
+                            </td>
+                            <td>
+                                @payment.Amount.ToString("0.00")
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
                 </table>
             </td>
         </tr>

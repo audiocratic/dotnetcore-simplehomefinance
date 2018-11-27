@@ -43,7 +43,8 @@ namespace SimpleBillPay.Pages.BillPay
             _context.BillPay.Add(BillPay);
             await _context.SaveChangesAsync();
 
-            return RedirectToPage("./Index");
+
+            return RedirectToPage("./Edit", new {id = BillPay.ID});
         }
     }
 }

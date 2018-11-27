@@ -39,7 +39,7 @@ namespace SimpleBillPay.Models
         public int BillInstanceID { get; set; }
         public virtual BillInstance BillInstance { get; set; }
         public DateTime PaymentDate { get; set; }
-        public DateTime DateConfirmed { get; set; }
+        public DateTime? DateConfirmed { get; set; }
         public int? BillPayID { get; set; }
         public BillPay BillPay { get; set; }
 

@@ -4,15 +4,30 @@
 @{
     ViewData["Title"] = "Edit";
 }
-
+<div class="spacer-sm">
+    <a 
+        asp-page="./Index"
+        class="btn btn-sm btn-info">
+        <span class="glyphicon glyphicon-menu-left"></span>&nbsp Back to List
+    </a>
+</div>
 <div class="row">
     <div class="col-md-6">
         <form method="post">
-            <div class="row spacer-sm">
+            <div class="row">
+                @if(Model.DuplicateDateError != null)
+                {
+                    <div class="alert alert-danger alert-dismissable">
+                        <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+                        Unable to change date to @( ((DateTime)Model.DuplicateDateError).ToString("MM/dd/yyyy") ).
+                        Bills have already been scheduled to be paid on that date.
+                    </div>
+                }
                 <h2>Pay Bills</h2>
                 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
                 <input type="hidden" asp-for="BillPay.ID" />
-                <div class="col-lg-6">
+                <div class="spacer-sm"></div>
+                <div class="col-lg-4">
                     <div class="form-group">
                         <label asp-for="BillPay.BillPayDate" class="control-label">Scheduled Pay Date</label>
                         <input 
@@ -29,16 +44,22 @@
                         <span asp-validation-for="BillPay.StartingAmount" class="text-danger"></span>
                     </div>
                 </div>
-                <div class="col-lg-6">
+                <div class="col-lg-4">
                     <div class="panel panel-default spacer-sm">
                         <div class="panel-heading text-center">
                             Ending Balance
                         </div>
                         <div class="panel-body text-center">
-                            <h4>@Model.BillPay.EndingAmount.ToString("0.00")</h4>
+                            <h4>
+                                @( (Model.BillPay.StartingAmount - 
+                                await Model.GetSumOfPaymentsByBillPay(Model.BillPay.ID)).ToString("0.00") )
+                            </h4>
                         </div>
                     </div>
                 </div>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Save" class="btn btn-primary" />
             </div>
             <div class="row spacer-sm">
                 <h2>Scheduled Payments</h2>
@@ -88,11 +109,16 @@
                                         .Sum(p => p.Amount)
                                 ).ToString("0.00"))</td>
                             <td>
-                                <input 
-                                    asp-for="BillPay.Payments[i].Amount"
-                                    type="text" 
-                                    class="form-control"
-                                    value=@payment.Amount.ToString("0.00") />
+                                @payment.Amount.ToString("0.00")
+                            </td>
+                            <td>
+                                <a 
+                                    class="btn btn-warning" 
+                                    asp-page="/Payments/Edit" 
+                                    asp-route-id=@payment.ID
+                                    asp-route-returnbillpayid=@Model.BillPay.ID>
+                                    <span class="glyphicon glyphicon-pencil"></span>
+                                </a>
                             </td>
                             <td>
                                 <button
@@ -104,10 +130,6 @@
                                     value="Remove" >
                                     <span class="glyphicon glyphicon-trash"></span>
                                 </button>
-
-                            
-
-
                                 <input 
                                     type="hidden"
                                     asp-for="BillPay.Payments[i].ID"
@@ -118,18 +140,15 @@
                         i++;
                     }
                 </table>
-                @if(Model.BillPay.Payments == null || Model.BillPay.Payments.Count == 0)
-                {
-                    <div class="alert alert-warning" role="alert">No payments have been scheduled.</div>
-                }
-                <div class="form-group">
-                    <input type="submit" value="Save" class="btn btn-default" />
-                </div>
+            @if(Model.BillPay.Payments == null || Model.BillPay.Payments.Count == 0)
+            {
+                <div class="alert alert-warning" role="alert">No payments have been scheduled.</div>
+            }
             </div>
         </form>
     </div>
     <form method="post">
-        <div class="col-md-5 col-md-offset-1 spacer-sm">
+        <div class="col-md-5 col-md-offset-1">
             <h2>Upcoming Bills</h2>
             <table class="table">
                 <tr>
@@ -161,9 +180,7 @@
     </form>
 </div>
 
-<div>
-    <a asp-page="./Index">Back to List</a>
-</div>
+
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}

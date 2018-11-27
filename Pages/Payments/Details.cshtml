@@ -1,0 +1,49 @@
+@page
+@model SimpleBillPay.Pages.Payments.DetailsModel
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h2>Details</h2>
+
+<div>
+    <h4>Payment</h4>
+    <hr />
+    <dl class="dl-horizontal">
+        <dt>
+            @Html.DisplayNameFor(model => model.Payment.Amount)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Payment.Amount)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Payment.BillInstance)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Payment.BillInstance.Name)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Payment.PaymentDate)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Payment.PaymentDate)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Payment.DateConfirmed)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Payment.DateConfirmed)
+        </dd>
+        <dt>
+            @Html.DisplayNameFor(model => model.Payment.BillPay)
+        </dt>
+        <dd>
+            @Html.DisplayFor(model => model.Payment.BillPay.UserId)
+        </dd>
+    </dl>
+</div>
+<div>
+    <a asp-page="./Edit" asp-route-id="@Model.Payment.ID">Edit</a> |
+    <a asp-page="./Index">Back to List</a>
+</div>

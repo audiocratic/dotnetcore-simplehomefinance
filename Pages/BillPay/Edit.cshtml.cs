@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore;
 using SimpleBillPay;
 using SimpleBillPay.Models;
 using Microsoft.AspNetCore.Authorization;
+using MySql.Data.MySqlClient;
 
 namespace SimpleBillPay.Pages.BillPay
 {
@@ -19,57 +20,54 @@ namespace SimpleBillPay.Pages.BillPay
 
         [BindProperty]
         public SimpleBillPay.Models.BillPay BillPay { get; set; }
+
+        public int TotalBillPages { get; set; }
+        public int CurrentBillPage { get; set; }
+
+        public int TotalPaymentPages { get; set; }
+        public int CurrentPaymentPage { get; set; }
+
+        public DateTime? DuplicateDateError { get; set; }
         
         public List<BillInstance> UpcomingBills { get; set; }
 
         [HttpPost]
-        public async Task<IActionResult> OnPostConfirmPayment (string paymentID, string billPayID)
+        public async Task<IActionResult> OnPostConfirmPayment (int? paymentID, int? billPayID)
         {
-            //Ensure parameters have been supplied            
-            int parsedPaymentID;
-            int parsedBillPayID;
 
-            if(billPayID == null 
-                || paymentID == null
-                || !int.TryParse(paymentID, out parsedPaymentID)
-                || !int.TryParse(billPayID, out parsedBillPayID))
+            if(billPayID == null || paymentID == null)
             {
                 return NotFound();
             }
 
             //Ensure parameters belong to current user
-            Payment payment = await GetPaymentById(parsedPaymentID);
+            Payment payment = await GetPaymentById((int)paymentID);
 
             if(payment == null) return NotFound();
 
             //Remove payment
             _context.Attach(payment).State = EntityState.Modified;
             
-            payment.DateConfirmed = (payment.DateConfirmed > DateTime.MinValue ? DateTime.MinValue : DateTime.Now);
+            payment.DateConfirmed = 
+                ((payment.DateConfirmed != null
+                    && payment.DateConfirmed > DateTime.MinValue) ? (DateTime?)null : DateTime.Now);
             
             await _context.SaveChangesAsync();
 
             //Call get method to rebuild page
-           return Redirect("./Edit?id=" + parsedBillPayID.ToString());
+           return Redirect("./Edit?id=" + billPayID.ToString());
         }
 
         [HttpPost]
-        public async Task<IActionResult> OnPostRemovePayment (string paymentID, string billPayID)
+        public async Task<IActionResult> OnPostRemovePayment (int? paymentID, int? billPayID)
         {
-            //Ensure parameters have been supplied            
-            int parsedPaymentID;
-            int parsedBillPayID;
-
-            if(billPayID == null 
-                || paymentID == null
-                || !int.TryParse(paymentID, out parsedPaymentID)
-                || !int.TryParse(billPayID, out parsedBillPayID))
+            if(billPayID == null || paymentID == null)
             {
                 return NotFound();
             }
 
             //Ensure parameters belong to current user
-            Payment payment = await GetPaymentById(parsedPaymentID);
+            Payment payment = await GetPaymentById((int)paymentID);
 
             if(payment == null) return NotFound();
 
@@ -78,20 +76,14 @@ namespace SimpleBillPay.Pages.BillPay
             await _context.SaveChangesAsync();
 
             //Call get method to rebuild page
-           return Redirect("./Edit?id=" + parsedBillPayID.ToString());
+           return Redirect("./Edit?id=" + billPayID.ToString());
         }
 
         [HttpPost]
-        public async Task<IActionResult> OnPostAddPayment(string billInstanceID, string billPayID)
+        public async Task<IActionResult> OnPostAddPayment(int? billInstanceID, int? billPayID)
         {            
-            //Ensure parameters have been supplied            
-            int parsedInstanceID;
-            int parsedBillPayID;
 
-            if(billPayID == null 
-                || billInstanceID == null
-                || !int.TryParse(billInstanceID, out parsedInstanceID)
-                || !int.TryParse(billPayID, out parsedBillPayID))
+            if(billPayID == null || billInstanceID == null)
             {
                 return NotFound();
             }
@@ -102,14 +94,14 @@ namespace SimpleBillPay.Pages.BillPay
                 .Include(b => b.BillTemplate.User)
                 .Include(b => b.Payments)
                 .Where(b => b.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
-                .FirstOrDefaultAsync(b => b.ID == parsedInstanceID);
+                .FirstOrDefaultAsync(b => b.ID == billInstanceID);
 
             if(instance == null) return NotFound();
 
             SimpleBillPay.Models.BillPay billPay = await _context.BillPay
                 .Include(b => b.User)
                 .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
-                .FirstOrDefaultAsync(b => b.ID == parsedBillPayID);
+                .FirstOrDefaultAsync(b => b.ID == billPayID);
 
             if(billPay == null) return NotFound();
 
@@ -120,6 +112,7 @@ namespace SimpleBillPay.Pages.BillPay
 
             payment.Amount = (instance.Amount - instance.Payments.Sum(p => p.Amount));
             payment.PaymentDate = billPay.BillPayDate;
+            payment.DateConfirmed = null;
             payment.BillPay = billPay;
 
             _context.Payments.Add(payment);
@@ -128,25 +121,43 @@ namespace SimpleBillPay.Pages.BillPay
             
 
             //Call get method to rebuild page
-            return Redirect("./Edit?id=" + parsedBillPayID.ToString());
+            return Redirect("./Edit?id=" + billPayID.ToString());
         }
 
-        public async Task<IActionResult> OnGetAsync(int? id)
+        public async Task<IActionResult> OnGetAsync(
+            int? id, 
+            DateTime? duplicateDateError,
+            int? billPage,
+            int? paymentPage)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
+            CurrentBillPage = billPage ?? 1;
+            CurrentPaymentPage = paymentPage ?? 1;
+
+            if(duplicateDateError != null) DuplicateDateError = duplicateDateError;
+
             BillPay = await _context.BillPay
-                .Include(b => b.Payments)
-                    .ThenInclude(p => p.BillInstance)
                 .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
                 .FirstOrDefaultAsync(m => m.ID == id);
 
             if(BillPay == null) return NotFound();
 
-            UpcomingBills = await GetUpcomingBills();
+            int totalUpcomingBills = await CountUpcomingBills();
+
+            TotalBillPages = (int)Math.Ceiling(((float)totalUpcomingBills / 20));
+            
+            UpcomingBills = await GetUpcomingBills((CurrentBillPage - 1) * 20, 20);
+
+                    
+            int totalPayments = await CountPaymentsByBillPay(BillPay.ID);
+
+            TotalPaymentPages = (int)Math.Ceiling(((float)totalPayments / 15));
+
+            BillPay.Payments = await GetPaymentsByBillPay(BillPay.ID, (CurrentPaymentPage - 1) * 15, 15);
 
             if (BillPay == null)
             {
@@ -176,16 +187,6 @@ namespace SimpleBillPay.Pages.BillPay
             billPay.StartingAmount = BillPay.StartingAmount;
             billPay.BillPayDate = BillPay.BillPayDate;
 
-            foreach(Payment payment in billPay.Payments)
-            {
-                Payment formPayment = BillPay.Payments.Where(p => p.ID == payment.ID).FirstOrDefault();
-
-                if(formPayment != null)
-                {
-                    payment.Amount = formPayment.Amount;
-                }
-            }
-
             try
             {
                 await _context.SaveChangesAsync();
@@ -201,8 +202,23 @@ namespace SimpleBillPay.Pages.BillPay
                     throw;
                 }
             }
+            catch(DbUpdateException ex)
+            {
+                if(ex.InnerException is MySqlException)
+                {
+                    if(((MySqlException)ex.InnerException).Number == 1062)
+                    {
+                        return RedirectToPage("./Edit", 
+                            new 
+                            {
+                                id = BillPay.ID, 
+                                duplicateDateError = BillPay.BillPayDate.ToString("yyyy-MM-dd")
+                            });
+                    }
+                }
+            }
 
-            return RedirectToPage("./Index");
+            return RedirectToPage("./Edit", new {id = BillPay.ID});
         }
 
         private bool BillPayExists(int id)
