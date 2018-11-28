@@ -6,9 +6,11 @@ using SimpleBillPay.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SimpleBillPay.Pages.BillPay
 {
+    [Authorize]
     public class BillPayPageModel : PageModel
     {
         protected readonly SimpleBillPay.BudgetContext _context;
@@ -71,11 +73,13 @@ namespace SimpleBillPay.Pages.BillPay
 
         public async Task<int> CountPaymentsByBillPay(int billPayID)
         {
-            return await _context.BillPay
-                .Include(b => b.Payments)
-                .Include(b => b.User)
-                .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
-                .CountAsync(b => b.ID == billPayID);
+            return await _context.Payments
+                .Include(p => p.BillInstance)
+                .Include(p => p.BillInstance.BillTemplate)
+                .Include(p => p.BillInstance.BillTemplate.User)
+                .Where(p => p.BillInstance.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
+                .Where(p => p.BillPayID == billPayID)
+                .CountAsync();
         }
 
         public async Task<decimal> GetSumOfPaymentsByBillPay(int billPayID)
@@ -87,6 +91,50 @@ namespace SimpleBillPay.Pages.BillPay
                 .Where(p => p.BillPayID == billPayID)
                 .SumAsync(p => p.Amount);
 
+        }
+
+        public async Task<List<SimpleBillPay.Models.BillPay>> GetScheduledBillPays(int start, int offset)
+        {
+            return await _context.BillPay
+                .Include(b => b.User)
+                .Include(b => b.Payments)
+                    .ThenInclude(p => p.BillInstance)
+                .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
+                .Where(b => b.BillPayDate >= DateTime.Today.AddDays(-1))
+                .OrderBy(b => b.BillPayDate)
+                .Skip(start).Take(offset)
+                .ToListAsync();
+        }
+
+        public async Task<int> CountScheduledBillPays()
+        {
+            return await _context.BillPay
+                .Include(b => b.User)
+                .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
+                .Where(b => b.BillPayDate >= DateTime.Today.AddDays(-1))
+                .CountAsync();
+        }
+
+        public async Task<List<SimpleBillPay.Models.BillPay>> GetHistoricalBillPays(int start, int offset)
+        {
+            return await _context.BillPay
+                .Include(b => b.User)
+                .Include(b => b.Payments)
+                    .ThenInclude(p => p.BillInstance)
+                .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
+                .Where(b => b.BillPayDate < DateTime.Today.AddDays(-1))
+                .OrderByDescending(b => b.BillPayDate)
+                .Skip(start).Take(offset)
+                .ToListAsync();
+        }
+
+        public async Task<int> CountHistoricalBillPays()
+        {
+            return await _context.BillPay
+                .Include(b => b.User)
+                .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
+                .Where(b => b.BillPayDate < DateTime.Today.AddDays(-1))
+                .CountAsync();
         }
     }
 }

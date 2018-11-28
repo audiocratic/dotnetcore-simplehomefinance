@@ -10,6 +10,9 @@ using SimpleBillPay.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore;
+using MySql.Data.MySqlClient;
+
 
 namespace SimpleBillPay.Pages.BillPay
 {
@@ -41,7 +44,26 @@ namespace SimpleBillPay.Pages.BillPay
                 .FirstOrDefault();
 
             _context.BillPay.Add(BillPay);
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch(DbUpdateException ex)
+            {
+                if(ex.InnerException is MySqlException)
+                {
+                    if(((MySqlException)ex.InnerException).Number == 1062)
+                    {
+                        return RedirectToPage("./Create", 
+                            new 
+                            {
+                                id = BillPay.ID, 
+                                duplicateDateError = BillPay.BillPayDate.ToString("yyyy-MM-dd")
+                            });
+                    }
+                }
+            }
 
 
             return RedirectToPage("./Edit", new {id = BillPay.ID});

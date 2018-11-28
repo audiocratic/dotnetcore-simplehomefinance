@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
@@ -10,6 +11,7 @@ using SimpleBillPay.Models;
 
 namespace SimpleBillPay.Pages.BillPay
 {
+    [Authorize]
     public class DeleteModel : PageModel
     {
         private readonly SimpleBillPay.BudgetContext _context;
@@ -45,11 +47,17 @@ namespace SimpleBillPay.Pages.BillPay
                 return NotFound();
             }
 
-            BillPay = await _context.BillPay.FindAsync(id);
+            BillPay = await _context.BillPay
+                .Include(b => b.User)
+                .Include(b => b.Payments)
+                .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
+                .FirstOrDefaultAsync(b => b.ID == (int)id);
 
             if (BillPay != null)
             {
+                BillPay.Payments.ForEach(p => _context.Payments.Remove(p));
                 _context.BillPay.Remove(BillPay);
+
                 await _context.SaveChangesAsync();
             }
 

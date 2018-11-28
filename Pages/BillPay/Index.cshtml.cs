@@ -12,14 +12,12 @@ using Microsoft.AspNetCore.Authorization;
 namespace SimpleBillPay.Pages.BillPay
 {
     [Authorize]
-    public class IndexModel : PageModel
+    public class IndexModel : BillPayPageModel
     {
-        private readonly SimpleBillPay.BudgetContext _context;
+        public IndexModel(SimpleBillPay.BudgetContext context) : base(context) {}
 
-        public IndexModel(SimpleBillPay.BudgetContext context)
-        {
-            _context = context;
-        }
+        public int TotalPages { get; set; }
+        public int CurrentPage { get; set; }
 
         public ListDirection Direction { get; set; }
 
@@ -28,10 +26,13 @@ namespace SimpleBillPay.Pages.BillPay
             RETRO, FUTURE
         }
 
-        public IList<SimpleBillPay.Models.BillPay> BillPays { get;set; }
+        public IList<SimpleBillPay.Models.BillPay> BillPays { get; set; }
 
-        public async Task OnGetAsync(string direction)
+        public async Task OnGetAsync(string direction, int? pageNumber)
         {
+            pageNumber = pageNumber ?? 1;
+            CurrentPage = (int)pageNumber;
+            
             if(direction == null || direction.ToLower() == ListDirection.FUTURE.ToString().ToLower())
             {
                 Direction = ListDirection.FUTURE;
@@ -44,24 +45,12 @@ namespace SimpleBillPay.Pages.BillPay
             switch(Direction)
             {
                 case ListDirection.FUTURE:
-                    BillPays = await _context.BillPay
-                        .Include(b => b.User)
-                        .Include(b => b.Payments)
-                            .ThenInclude(p => p.BillInstance)
-                        .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
-                        .Where(b => b.BillPayDate >= DateTime.Today.AddDays(-1))
-                        .OrderBy(b => b.BillPayDate)
-                        .ToListAsync();
+                    BillPays = await GetScheduledBillPays(((int)pageNumber - 1) * 10, 10);
+                    TotalPages = (int)Math.Ceiling((double)await CountScheduledBillPays() / 10);
                     break;
                 case ListDirection.RETRO:
-                    BillPays = await _context.BillPay
-                        .Include(b => b.User)
-                        .Include(b => b.Payments)
-                            .ThenInclude(p => p.BillInstance)
-                        .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
-                        .Where(b => b.BillPayDate < DateTime.Today.AddDays(-1))
-                        .OrderByDescending(b => b.BillPayDate)
-                        .ToListAsync();
+                    BillPays = await GetHistoricalBillPays(((int)pageNumber - 1) * 10, 10);
+                    TotalPages = (int)Math.Ceiling((double)await CountHistoricalBillPays() / 10);
                     break;
             }
 

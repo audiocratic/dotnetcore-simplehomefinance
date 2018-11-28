@@ -113,3 +113,21 @@
 {
     <div class="alert alert-warning" role="alert">No payments scheduled.</div>
 }
+@if(Model.CurrentPage > 1)
+{
+    <a 
+        class="btn btn-sm btn-default"
+        asp-page="./Index"
+        asp-route-pagenumber=@(Model.CurrentPage - 1)>
+        <span class="glyphicon glyphicon-menu-left"></span>
+    </a>
+}
+@if(Model.CurrentPage < Model.TotalPages)
+{
+    <a 
+        class="btn btn-sm btn-default"
+        asp-page="./Index"
+        asp-route-pagenumber=@(Model.CurrentPage + 1)>
+        <span class="glyphicon glyphicon-menu-right"></span>
+    </a>
+}
