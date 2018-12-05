@@ -11,7 +11,7 @@
         <span class="glyphicon glyphicon-menu-left"></span>&nbsp Back to List
     </a>
 </div>
-<div class="row">
+<div class="row" id="refreshPanel">
     <div class="col-md-6">
         <form method="post">
             <div class="row">
@@ -187,7 +187,8 @@
                     <td>
                         <button 
                             formmethod="post"
-                            class="btn btn-success" 
+                            class="btn btn-success"
+                            component="UpcomingBills" 
                             asp-page-handler="AddPayment" 
                             asp-route-billInstanceID=@bill.ID
                             asp-route-billPayID=@Model.BillPay.ID>
@@ -227,5 +228,31 @@
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
     <script>
         $("#BillPayDate").datepicker({"autoclose":true});
+
+        function initializePostButtons(){
+            $("button[formmethod='post']").click(function(e){
+                e.preventDefault();
+
+                var url = e.currentTarget.getAttribute("formaction");
+
+                $.ajax(url, {
+                    type: "POST",
+                    headers: {
+                        RequestVerificationToken: 
+                        $('input:hidden[name="__RequestVerificationToken"]').val()
+                    },
+                    contentType: "text/html",
+                    success: function(resp){
+
+                        $("#refreshPanel").html($($.parseHTML(resp)).find("#refreshPanel").html());
+                        initializePostButtons();
+                    }
+                });
+            });
+        }
+
+        $(function(){
+            initializePostButtons();
+        });
     </script>
 }

@@ -23,13 +23,25 @@ namespace SimpleBillPay.Pages.BillPay
 
         public int TotalBillPages { get; set; }
         public int CurrentBillPage { get; set; }
+        public List<BillInstance> UpcomingBills { get; set; }
+
 
         public int TotalPaymentPages { get; set; }
         public int CurrentPaymentPage { get; set; }
 
         public DateTime? DuplicateDateError { get; set; }
         
-        public List<BillInstance> UpcomingBills { get; set; }
+
+
+        [HttpPost]
+        public IActionResult OnPostTest()
+        {
+            BillInstance instance = new BillInstance();
+
+            instance.Name = HttpContext.User.Identity.Name;
+
+            return new JsonResult(instance);
+        }
 
         [HttpPost]
         public async Task<IActionResult> OnPostConfirmPayment (int? paymentID, int? billPayID)
@@ -127,16 +139,16 @@ namespace SimpleBillPay.Pages.BillPay
         public async Task<IActionResult> OnGetAsync(
             int? id, 
             DateTime? duplicateDateError,
-            int? billPage,
-            int? paymentPage)
+            int? paymentPage,
+            int? billPage)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            CurrentBillPage = billPage ?? 1;
             CurrentPaymentPage = paymentPage ?? 1;
+            CurrentBillPage = billPage ?? 1;
 
             if(duplicateDateError != null) DuplicateDateError = duplicateDateError;
 
@@ -145,14 +157,15 @@ namespace SimpleBillPay.Pages.BillPay
                 .FirstOrDefaultAsync(m => m.ID == id);
 
             if(BillPay == null) return NotFound();
-
+            
+            //Bills pagination
             int totalUpcomingBills = await CountUpcomingBills();
 
             TotalBillPages = (int)Math.Ceiling(((float)totalUpcomingBills / 20));
             
             UpcomingBills = await GetUpcomingBills((CurrentBillPage - 1) * 20, 20);
-
-                    
+            
+            //Payments pagination
             int totalPayments = await CountPaymentsByBillPay(BillPay.ID);
 
             TotalPaymentPages = (int)Math.Ceiling(((float)totalPayments / 15));
