@@ -15,26 +15,40 @@
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="Payment.ID" />
             <div class="panel panel-default">
-                <div>
-                    @Model.Payment.BillInstance.Name
-                </div>
-                <div>
-                    @Model.Payment.BillInstance.Amount
-                </div>
-                <div>
-                    @Model.Payment.PriorBalance
+                <div class="panel-heading">Bill Info</div>
+                <div class="panel-body">  
+                    <a 
+                        class="btn btn-sm btn-warning pull-right"
+                        asp-page="/Bills/Edit"
+                        asp-route-id=@Model.Payment.BillInstance.ID
+                        asp-route-returnBillPayID=@Model.ReturnBillPayID>
+                        <span class="glyphicon glyphicon-pencil"></span>
+                    </a>
+                    <label>Name</label>
+                    <div>
+                        @Model.Payment.BillInstance.Name
+                    </div>
+                    <label class="spacer-sm">Total Amount</label>
+                    <div>
+                        @Model.Payment.BillInstance.Amount.ToString("0.00")
+                    </div>
+                    <label class="spacer-sm">Remaining Balance Prior to this Payment</label>
+                    <div>
+                        @Model.Payment.PriorBalance.ToString("0.00")
+                    </div>
                 </div>
             </div>
+            <label>Payment Date</label>
             <div>
-                @Model.Payment.PaymentDate
+                @Model.Payment.PaymentDate.ToString("MM/dd/yyyy")
             </div>
-            <div class="form-group">
+            <div class="form-group spacer-sm">
                 <label asp-for="Payment.Amount" class="control-label"></label>
                 <input asp-for="Payment.Amount" class="form-control" />
                 <span asp-validation-for="Payment.Amount" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <label asp-for="Payment.DateConfirmed" class="control-label"></label>
+                <label asp-for="Payment.DateConfirmed" class="control-label">Date Confirmed</label>
                 <input 
                     asp-for="Payment.DateConfirmed" 
                     class="form-control"
@@ -42,15 +56,23 @@
                 <span asp-validation-for="Payment.DateConfirmed" class="text-danger"></span>
             </div>
             <div class="form-group">
-                <input type="submit" value="Save" class="btn btn-default" />
+                <input type="submit" value="Save Changes" class="btn btn-success" />
+            @if(Model.ReturnBillPayID == null || Model.ReturnBillPayID <= 0)
+            {
+                <a asp-page="./Index">Back to List</a>
+            }
+            else
+            {
+                <a 
+                    asp-page="/BillPay/Edit" 
+                    asp-route-id=@Model.ReturnBillPayID
+                    class="btn btn-warning">Cancel</a>
+            }
             </div>
         </form>
     </div>
 </div>
 
-<div>
-    <a asp-page="./Index">Back to List</a>
-</div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}

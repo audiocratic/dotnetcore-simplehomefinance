@@ -20,36 +20,13 @@ namespace SimpleBillPay.Pages.BillPay
             _context = context;
         }
 
-        public async Task<List<BillInstance>> GetUpcomingBills(int start, int offset)
-        {
-            return await _context.BillInstance
-                .Include(b => b.BillTemplate)
-                .Include(b => b.BillTemplate.User)
-                .Include(b => b.Payments)
-                .Where(b => b.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
-                .Where(b => b.DueDate <= DateTime.Today.AddYears(2))
-                .Where(b => b.Payments.Count == 0 || b.Payments.Sum(p => p.Amount) < b.Amount)
-                .OrderBy(b => b.DueDate)
-                .Skip(start).Take(offset)
-                .ToListAsync();
-        }
-
-        public async Task<int> CountUpcomingBills()
-        {
-            return await _context.BillInstance
-                .Include(b => b.BillTemplate)
-                .Include(b => b.BillTemplate.User)
-                .Include(b => b.Payments)
-                .Where(b => b.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
-                .Where(b => b.DueDate <= DateTime.Today.AddYears(2))
-                .Where(b => b.Payments.Count == 0 || b.Payments.Sum(p => p.Amount) < b.Amount)
-                .CountAsync();
-        }
+        
 
         public async Task<Payment> GetPaymentById(int id)
         {
             Payment payment = await _context.Payments
                 .Include(p => p.BillInstance)
+                    .ThenInclude(b => b.Payments)
                 .Include(p => p.BillInstance.BillTemplate)
                 .Include(p => p.BillInstance.BillTemplate.User)
                 .Where(b => b.BillInstance.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
@@ -62,6 +39,7 @@ namespace SimpleBillPay.Pages.BillPay
         {
             return await _context.Payments
                 .Include(p => p.BillInstance)
+                    .ThenInclude(b => b.Payments)
                 .Include(p => p.BillInstance.BillTemplate)
                 .Include(p => p.BillInstance.BillTemplate.User)
                 .Where(p => p.BillInstance.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
@@ -134,6 +112,32 @@ namespace SimpleBillPay.Pages.BillPay
                 .Include(b => b.User)
                 .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
                 .Where(b => b.BillPayDate < DateTime.Today.AddDays(-1))
+                .CountAsync();
+        }
+
+        public async Task<List<BillInstance>> GetUpcomingBills(int start, int offset)
+        {
+            return await _context.BillInstance
+                .Include(b => b.BillTemplate)
+                .Include(b => b.BillTemplate.User)
+                .Include(b => b.Payments)
+                .Where(b => b.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
+                .Where(b => b.DueDate <= DateTime.Today.AddYears(2))
+                .Where(b => b.Payments.Count == 0 || b.Payments.Sum(p => p.Amount) < b.Amount)
+                .OrderBy(b => b.DueDate)
+                .Skip(start).Take(offset)
+                .ToListAsync();
+        }
+
+        public async Task<int> CountUpcomingBills()
+        {
+            return await _context.BillInstance
+                .Include(b => b.BillTemplate)
+                .Include(b => b.BillTemplate.User)
+                .Include(b => b.Payments)
+                .Where(b => b.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
+                .Where(b => b.DueDate <= DateTime.Today.AddYears(2))
+                .Where(b => b.Payments.Count == 0 || b.Payments.Sum(p => p.Amount) < b.Amount)
                 .CountAsync();
         }
     }

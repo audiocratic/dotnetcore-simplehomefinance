@@ -105,16 +105,24 @@
                 </div>
             }
 
-            <div class="form-group">
-                <input type="submit" value="Save Changes" class="btn btn-default" />
+            <div class="form-group spacer-sm">
+                <input type="submit" value="Save Changes" class="btn btn-success" />
+            @if(Model.ReturnBillPayID == null || Model.ReturnBillPayID <= 0)
+            {
+                <a asp-page="Index" class="btn btn-default">Back to List</a>
+            }
+            else
+            {
+                <a 
+                    class="btn btn-warning"
+                    asp-page="/BillPay/Edit" 
+                    asp-route-id=@Model.ReturnBillPayID>Cancel</a>
+            }
             </div>
         </form>
     </div>
 </div>
 
-<div>
-    <a asp-page="Index">Back to List</a>
-</div>
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}

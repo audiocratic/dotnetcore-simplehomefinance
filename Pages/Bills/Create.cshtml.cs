@@ -21,15 +21,19 @@ namespace SimpleBillPay.Pages.Bills
         {
         }
 
-        public IActionResult OnGet()
+        public int? ReturnBillPayID { get; set; }
+
+        public IActionResult OnGet(int? returnBillPayID)
         {
+            ReturnBillPayID = returnBillPayID;
+            
             return Page();
         }
 
         [BindProperty]
         public BillInstance BillInstance { get; set; }
 
-        public async Task<IActionResult> OnPostAsync()
+        public async Task<IActionResult> OnPostAsync(int? returnBillPayID)
         {
             if (!ModelState.IsValid)
             {
@@ -58,6 +62,11 @@ namespace SimpleBillPay.Pages.Bills
             
             //Insert
             await _context.SaveChangesAsync();
+
+            if(returnBillPayID != null && returnBillPayID > 0)
+            {
+                return RedirectToPage("/BillPay/Edit", new {id = returnBillPayID});
+            }
 
             return RedirectToPage("./Index");
         }

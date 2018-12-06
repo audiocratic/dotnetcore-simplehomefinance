@@ -25,7 +25,7 @@ namespace SimpleBillPay.Pages.Bills
         [BindProperty]
         public bool ChangeEntireSeries { get; set; }
 
-        
+        public int? ReturnBillPayID { get; set; }
 
         public async Task RebuildSeries(BillInstance instance)
         {
@@ -36,7 +36,7 @@ namespace SimpleBillPay.Pages.Bills
             if(BillInstance.BillTemplate.FrequencyInMonths > 0) CreateSeries(instance);
         }
 
-        public async Task<IActionResult> OnGetAsync(int? id)
+        public async Task<IActionResult> OnGetAsync(int? id, int? returnBillPayID)
         {
             if (id == null)
             {
@@ -50,10 +50,12 @@ namespace SimpleBillPay.Pages.Bills
                 return NotFound();
             }
 
+            ReturnBillPayID = returnBillPayID ?? 0;
+
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAsync(int? id)
+        public async Task<IActionResult> OnPostAsync(int? id, int? returnBillPayID)
         {
             if (!ModelState.IsValid || id == null)
             {
@@ -63,7 +65,7 @@ namespace SimpleBillPay.Pages.Bills
             BillInstance instance = await GetBillInstanceAsync((int)id);
 
             if(instance == null) return NotFound(); //Make sure this bill is in the DB and accessible to user
-            
+
             _context.Attach(instance).State = EntityState.Modified;
 
             //Overwrite properties from form
@@ -102,7 +104,12 @@ namespace SimpleBillPay.Pages.Bills
                 }
             }
 
-            return RedirectToPage("./Index");
+            if(returnBillPayID != null && returnBillPayID > 0)
+            {
+                return RedirectToPage("/BillPay/Edit", new {id = returnBillPayID} );
+            }
+
+            return RedirectToPage("./Index");            
         }
 
         private bool BillInstanceExists(int id)

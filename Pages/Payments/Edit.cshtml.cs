@@ -22,7 +22,9 @@ namespace SimpleBillPay.Pages.Payments
         [BindProperty]
         public Payment Payment { get; set; }
 
-        public async Task<IActionResult> OnGetAsync(int? id)
+        public int? ReturnBillPayID { get; set; }
+
+        public async Task<IActionResult> OnGetAsync(int? id, int? returnBillPayID)
         {
             if (id == null)
             {
@@ -36,10 +38,12 @@ namespace SimpleBillPay.Pages.Payments
                 return NotFound();
             }
 
+            ReturnBillPayID = returnBillPayID;
+
             return Page();
         }
 
-        public async Task<IActionResult> OnPostAsync(string returnBillPayID)
+        public async Task<IActionResult> OnPostAsync(int? returnBillPayID)
         {
             if (!ModelState.IsValid)
             {
@@ -71,14 +75,9 @@ namespace SimpleBillPay.Pages.Payments
                 }
             }
 
-            if(returnBillPayID != null)
+            if(returnBillPayID != null && returnBillPayID > 0)
             {
-                int billPayID;
-                
-                if(int.TryParse(returnBillPayID, out billPayID))
-                {
-                    return RedirectToPage("/BillPay/Edit", new {id = returnBillPayID});
-                }
+                return RedirectToPage("/BillPay/Edit", new {id = returnBillPayID});
             }
 
             return RedirectToPage("./Index");

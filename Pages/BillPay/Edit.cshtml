@@ -4,6 +4,7 @@
 @{
     ViewData["Title"] = "Edit";
 }
+
 <div class="spacer-sm">
     <a 
         asp-page="./Index"
@@ -110,7 +111,7 @@
                                         .Sum(p => p.Amount)
                                 ).ToString("0.00"))</td>
                             <td>
-                                @payment.Amount.ToString("0.00")
+                                @payment.PriorBalance.ToString("0.00")
                             </td>
                             <td>
                                 <a 
@@ -170,34 +171,63 @@
     </div>
     <form method="post">
         <div class="col-md-5 col-md-offset-1">
-            <h2>Upcoming Bills</h2>
-            <table class="table">
-                <tr>
-                    <th>Due Date</th>
-                    <th>Name</th>
-                    <th>Remaining Balance</th>
-                    <th></th>
-                </tr>
-            @foreach(SimpleBillPay.Models.BillInstance bill in Model.UpcomingBills)
-            {
-                <tr>
-                    <td>@bill.DueDate.ToString("MM/dd/yyyy")</td>
-                    <td>@bill.Name</td>
-                    <td>@((bill.Amount - @bill.Payments.Sum(p => p.Amount)).ToString("0.00"))</td>
-                    <td>
-                        <button 
-                            formmethod="post"
+            <div class="row">
+                <div class="col-lg-9">
+                    <h2>Upcoming Bills</h2>
+                    <div class="spacer-sm"></div>
+                </div>
+                <div class="col-lg-3">
+                    <div class="row spacer-md">
+                    </div>
+                    <div class="row">
+                        <a 
                             class="btn btn-success"
-                            component="UpcomingBills" 
-                            asp-page-handler="AddPayment" 
-                            asp-route-billInstanceID=@bill.ID
-                            asp-route-billPayID=@Model.BillPay.ID>
-                            <span class="glyphicon glyphicon-plus"></span>
-                        </button>
-                    </td>
-                </tr>
-            }
-            </table>
+                            asp-page="/Bills/Create"
+                            asp-route-returnbillpayid=@Model.BillPay.ID>
+                            <span class="glyphicon glyphicon-plus"></span> &nbsp Create New
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="row spacer-sm">
+                <table class="table">
+                    <tr>
+                        <th>Due Date</th>
+                        <th>Name</th>
+                        <th>Remaining Balance</th>
+                        <th></th>
+                        <th></th>
+                    </tr>
+                @foreach(SimpleBillPay.Models.BillInstance bill in Model.UpcomingBills)
+                {
+                    <tr>
+                        <td>@bill.DueDate.ToString("MM/dd/yyyy")</td>
+                        <td>@bill.Name</td>
+                        <td>@((bill.Amount - @bill.Payments.Sum(p => p.Amount)).ToString("0.00"))</td>
+                        <td>
+                            <button 
+                                formmethod="post"
+                                class="btn btn-success"
+                                component="UpcomingBills" 
+                                asp-page-handler="AddPayment" 
+                                asp-route-billInstanceID=@bill.ID
+                                asp-route-billPayID=@Model.BillPay.ID>
+                                <span class="glyphicon glyphicon-plus"></span>
+                            </button>
+                        </td>
+                        <td>
+                            <a
+                                class="btn btn-warning"
+                                asp-page="/Bills/Edit"
+                                asp-route-id=@bill.ID
+                                asp-route-returnbillpayid=@Model.BillPay.ID>
+                                <span class="glyphicon glyphicon-pencil"></span>
+                            </a>
+                        </td>
+                    </tr>
+                }
+                </table>
+            </div>
             @if(Model.CurrentBillPage > 1)
             {
                 <a 
