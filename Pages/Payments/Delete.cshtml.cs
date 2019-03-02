@@ -8,17 +8,18 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SimpleBillPay;
 using SimpleBillPay.Models;
+using SimpleBillPay.Services;
 
 namespace SimpleBillPay.Pages.Payments
 {
     [Authorize]
     public class DeleteModel : PageModel
     {
-        private readonly SimpleBillPay.BudgetContext _context;
+        private readonly PaymentService _paymentService;
 
-        public DeleteModel(SimpleBillPay.BudgetContext context)
+        public DeleteModel(PaymentService paymentService)
         {
-            _context = context;
+            _paymentService = paymentService;
         }
 
         [BindProperty]
@@ -31,13 +32,7 @@ namespace SimpleBillPay.Pages.Payments
                 return NotFound();
             }
 
-            Payment = await _context.Payments
-                .Include(p => p.BillInstance)
-                .Include(p => p.BillInstance.BillTemplate)
-                .Include(p => p.BillInstance.BillTemplate.User)
-                .Where(p => p.BillInstance.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
-                .Where(p => p.ID == (int)id)
-                .FirstOrDefaultAsync();
+            Payment = await _paymentService.GetPaymentByIdAsync((int)id);
 
             if (Payment == null)
             {
@@ -53,18 +48,11 @@ namespace SimpleBillPay.Pages.Payments
                 return NotFound();
             }
 
-            Payment = await _context.Payments
-                .Include(p => p.BillInstance)
-                .Include(p => p.BillInstance.BillTemplate)
-                .Include(p => p.BillInstance.BillTemplate.User)
-                .Where(p => p.BillInstance.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
-                .Where(p => p.ID == (int)id)
-                .FirstOrDefaultAsync();
+            Payment = await _paymentService.GetPaymentByIdAsync((int)id);
 
             if (Payment != null)
             {
-                _context.Payments.Remove(Payment);
-                await _context.SaveChangesAsync();
+                await _paymentService.RemoveAsync(Payment);
             }
 
             return RedirectToPage("./Index");

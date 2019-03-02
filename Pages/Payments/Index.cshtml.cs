@@ -8,30 +8,25 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SimpleBillPay;
 using SimpleBillPay.Models;
+using SimpleBillPay.Services;
 
 namespace SimpleBillPay.Pages.Payments
 {
     [Authorize]
     public class IndexModel : PageModel
     {
-        private readonly SimpleBillPay.BudgetContext _context;
+        private readonly PaymentService _paymentService;
 
-        public IndexModel(SimpleBillPay.BudgetContext context)
+        public IndexModel(PaymentService paymentService)
         {
-            _context = context;
+            _paymentService = paymentService;
         }
 
         public IList<Payment> Payment { get;set; }
 
         public async Task OnGetAsync()
         {
-            Payment = await _context.Payments
-                .Include(p => p.BillInstance)
-                .Include(p => p.BillPay)
-                .Include(p => p.BillInstance.BillTemplate)
-                .Include(p => p.BillInstance.BillTemplate.User)
-                .Where(p => p.BillInstance.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
-                .ToListAsync();
+            Payment = await _paymentService.GetPaymentsAsync();
         }
     }
 }

@@ -9,14 +9,17 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SimpleBillPay;
 using SimpleBillPay.Models;
+using SimpleBillPay.Services;
 
 namespace SimpleBillPay.Pages.Bills
 {
     [Authorize]
-    public class EditModel : BillPageModel
+    public class EditModel : PageModel
     {   
-        public EditModel(SimpleBillPay.BudgetContext context) : base(context)
+        private readonly BillService _billService;
+        public EditModel(BillService billService)
         {
+            _billService = billService;
         }
 
         [BindProperty]
@@ -27,15 +30,6 @@ namespace SimpleBillPay.Pages.Bills
 
         public int? ReturnBillPayID { get; set; }
 
-        public async Task RebuildSeries(BillInstance instance)
-        {
-            List<BillInstance> instances = await FetchEditableBillInstancesAsync(instance);
-
-            _context.RemoveRange(instances);
-
-            if(BillInstance.BillTemplate.FrequencyInMonths > 0) CreateSeries(instance);
-        }
-
         public async Task<IActionResult> OnGetAsync(int? id, int? returnBillPayID)
         {
             if (id == null)
@@ -43,7 +37,7 @@ namespace SimpleBillPay.Pages.Bills
                 return NotFound();
             }
 
-            BillInstance = await GetBillInstanceAsync((int)id);
+            BillInstance = await _billService.GetBillInstanceAsync((int)id);
 
             if (BillInstance == null)
             {
@@ -62,39 +56,40 @@ namespace SimpleBillPay.Pages.Bills
                 return Page();
             }
 
-            BillInstance instance = await GetBillInstanceAsync((int)id);
+            BillInstance instance = await _billService.GetBillInstanceAsync((int)id);
 
             if(instance == null) return NotFound(); //Make sure this bill is in the DB and accessible to user
-
-            _context.Attach(instance).State = EntityState.Modified;
 
             //Overwrite properties from form
             instance.Amount = BillInstance.Amount;
             instance.DueDate = BillInstance.DueDate;
             instance.Name = BillInstance.BillTemplate.Name;
 
-            bool isTemplated = ((ChangeEntireSeries && BillInstance.BillTemplate.FrequencyInMonths > 0) ||
-            (instance.BillTemplate.FrequencyInMonths == 0 && BillInstance.BillTemplate.FrequencyInMonths > 0));
+            bool isTemplated = 
+                ((ChangeEntireSeries && BillInstance.BillTemplate.FrequencyInMonths > 0) 
+                || (instance.BillTemplate.FrequencyInMonths == 0 
+                    && BillInstance.BillTemplate.FrequencyInMonths > 0));
 
-            if(isTemplated) instance.BillTemplate.FrequencyInMonths = BillInstance.BillTemplate.FrequencyInMonths;
+            if(isTemplated) 
+                instance.BillTemplate.FrequencyInMonths = BillInstance.BillTemplate.FrequencyInMonths;
             
             instance.BillTemplate.Name = BillInstance.BillTemplate.Name;
 
 
             if(ChangeEntireSeries)
             {
-                await RebuildSeries(instance);
+                await _billService.RebuildSeriesAsync(instance);
+                if(BillInstance.BillTemplate.FrequencyInMonths > 0) 
+                    await _billService.CreateSeriesAsync(instance);
             }
             
-
-
             try
             {
-                await _context.SaveChangesAsync();
+                await _billService.UpdateAsync(instance);
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!BillInstanceExists(BillInstance.ID))
+                if (!await _billService.BillInstanceExistsAsync(BillInstance.ID))
                 {
                     return NotFound();
                 }
@@ -112,9 +107,6 @@ namespace SimpleBillPay.Pages.Bills
             return RedirectToPage("./Index");            
         }
 
-        private bool BillInstanceExists(int id)
-        {
-            return _context.BillInstance.Any(e => e.ID == id);
-        }
+        
     }
 }

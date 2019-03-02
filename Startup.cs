@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
+using SimpleBillPay.Services;
 
 namespace SimpleBillPay
 {
@@ -55,6 +56,11 @@ namespace SimpleBillPay
                 "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
                 options.User.RequireUniqueEmail = false;
             });
+
+            services.AddScoped<BillPayService>();
+            services.AddScoped<PaymentService>();
+            services.AddScoped<ExpenseService>();
+            services.AddScoped<BillService>();
 
             services.AddMvc();
         }

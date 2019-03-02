@@ -3,28 +3,31 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using SimpleBillPay;
 using SimpleBillPay.Models;
+using SimpleBillPay.Services;
+using SimpleBillPay.Areas.Identity.Data;
 
 namespace SimpleBillPay.Pages.Payments
 {
     [Authorize]
     public class CreateModel : PageModel
     {
-        private readonly SimpleBillPay.BudgetContext _context;
+        private readonly PaymentService _paymentService;
+        private readonly UserManager<User> _userManager;
 
-        public CreateModel(SimpleBillPay.BudgetContext context)
+        public CreateModel(PaymentService paymentService, UserManager<User> userManager)
         {
-            _context = context;
+            _paymentService = paymentService;
+            _userManager = userManager;
         }
 
         public IActionResult OnGet()
         {
-        ViewData["BillInstanceID"] = new SelectList(_context.BillInstance, "ID", "Name");
-        ViewData["BillPayID"] = new SelectList(_context.BillPay, "ID", "UserId");
             return Page();
         }
 
@@ -38,13 +41,9 @@ namespace SimpleBillPay.Pages.Payments
                 return Page();
             }
 
-            Payment.BillInstance.BillTemplate.User = _context.AspNetUsers
-                .FirstOrDefault(u => u.UserName == HttpContext.User.Identity.Name);
+            Payment.BillInstance.BillTemplate.User = await _userManager.GetUserAsync(HttpContext.User);
 
-            if(Payment.BillInstance.BillTemplate.User == null) return NotFound();
-
-            _context.Payments.Add(Payment);
-            await _context.SaveChangesAsync();
+            await _paymentService.AddAsync(Payment);
 
             return RedirectToPage("./Index");
         }

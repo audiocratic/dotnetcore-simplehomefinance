@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Web.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
@@ -10,13 +11,29 @@ using SimpleBillPay;
 using SimpleBillPay.Models;
 using Microsoft.AspNetCore.Authorization;
 using MySql.Data.MySqlClient;
+using SimpleBillPay.Services;
 
 namespace SimpleBillPay.Pages.BillPay
 {
     [Authorize]
-    public class EditModel : BillPayPageModel
+    public class EditModel : PageModel
     {
-        public EditModel(SimpleBillPay.BudgetContext context) : base(context) {}
+        private readonly BillPayService _billPayService;
+        private readonly PaymentService _paymentService;
+        private readonly ExpenseService _expenseService;
+        private readonly BillService _billService;
+
+        public EditModel(
+            BillPayService billPayService, 
+            PaymentService paymentService,
+            ExpenseService expenseService,
+            BillService billService)
+        {
+            _billPayService = billPayService;
+            _paymentService = paymentService;
+            _expenseService = expenseService;
+            _billService = billService;
+        }
 
         [BindProperty]
         public SimpleBillPay.Models.BillPay BillPay { get; set; }
@@ -28,6 +45,9 @@ namespace SimpleBillPay.Pages.BillPay
 
         public int TotalPaymentPages { get; set; }
         public int CurrentPaymentPage { get; set; }
+        
+        public int TotalExpensePages { get; set; }
+        public int CurrentExpensePage { get; set; }
 
         public DateTime? DuplicateDateError { get; set; }
         
@@ -44,7 +64,7 @@ namespace SimpleBillPay.Pages.BillPay
         }
 
         [HttpPost]
-        public async Task<IActionResult> OnPostConfirmPayment (int? paymentID, int? billPayID)
+        public async Task<IActionResult> OnPostConfirmPayment (int? paymentID, int? billPayID, [FromQuery]BillPayPaging paging)
         {
 
             if(billPayID == null || paymentID == null)
@@ -53,21 +73,46 @@ namespace SimpleBillPay.Pages.BillPay
             }
 
             //Ensure parameters belong to current user
-            Payment payment = await GetPaymentById((int)paymentID);
+            Payment payment = await _paymentService.GetPaymentByIdAsync((int)paymentID);
 
             if(payment == null) return NotFound();
 
-            //Remove payment
-            _context.Attach(payment).State = EntityState.Modified;
-            
-            payment.DateConfirmed = 
-                ((payment.DateConfirmed != null
-                    && payment.DateConfirmed > DateTime.MinValue) ? (DateTime?)null : DateTime.Now);
-            
-            await _context.SaveChangesAsync();
+            //Update payment confirmation status
+            await _paymentService.ToggleConfirmationAsync(payment);
 
             //Call get method to rebuild page
-           return Redirect("./Edit?id=" + billPayID.ToString());
+           return RedirectToPage("Edit", new {
+               ID = billPayID,
+               PaymentPage = paging.PaymentPage,
+               BillPage = paging.BillPage,
+               ExpensePage = paging.ExpensePage
+           });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> OnPostConfirmExpense (int? expenseID, int? billPayID, [FromQuery]BillPayPaging paging)
+        {
+
+            if(billPayID == null || expenseID == null)
+            {
+                return NotFound();
+            }
+
+            //Ensure parameters belong to current user
+            Expense expense = await _expenseService.GetExpenseByIDAsync((int)expenseID);
+
+            if(expense == null) return NotFound();
+
+            //Remove expense
+            await _expenseService.ToggleConfirmationAsync(expense);
+
+            //Call get method to rebuild page
+           return RedirectToPage("Edit", new {
+               ID = billPayID,
+               PaymentPage = paging.PaymentPage,
+               BillPage = paging.BillPage,
+               ExpensePage = paging.ExpensePage
+           });
         }
 
         [HttpPost]
@@ -79,13 +124,12 @@ namespace SimpleBillPay.Pages.BillPay
             }
 
             //Ensure parameters belong to current user
-            Payment payment = await GetPaymentById((int)paymentID);
+            Payment payment = await _paymentService.GetPaymentByIdAsync((int)paymentID);
 
             if(payment == null) return NotFound();
 
             //Remove payment
-            _context.Payments.Remove(payment);
-            await _context.SaveChangesAsync();
+            await _paymentService.RemoveAsync(payment);
 
             //Call get method to rebuild page
            return Redirect("./Edit?id=" + billPayID.ToString());
@@ -101,19 +145,11 @@ namespace SimpleBillPay.Pages.BillPay
             }
 
             //Ensure parameters belong to current user
-            BillInstance instance = await _context.BillInstance
-                .Include(b => b.BillTemplate)
-                .Include(b => b.BillTemplate.User)
-                .Include(b => b.Payments)
-                .Where(b => b.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
-                .FirstOrDefaultAsync(b => b.ID == billInstanceID);
+            BillInstance instance = await _billService.GetBillInstanceAsync((int)billInstanceID);
 
             if(instance == null) return NotFound();
 
-            SimpleBillPay.Models.BillPay billPay = await _context.BillPay
-                .Include(b => b.User)
-                .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
-                .FirstOrDefaultAsync(b => b.ID == billPayID);
+            SimpleBillPay.Models.BillPay billPay = await _billPayService.GetByIdAsync((int)billPayID);
 
             if(billPay == null) return NotFound();
 
@@ -127,50 +163,44 @@ namespace SimpleBillPay.Pages.BillPay
             payment.DateConfirmed = null;
             payment.BillPay = billPay;
 
-            _context.Payments.Add(payment);
-            await _context.SaveChangesAsync();
-
-            
+            await _paymentService.AddAsync(payment);
 
             //Call get method to rebuild page
             return Redirect("./Edit?id=" + billPayID.ToString());
         }
 
-        public async Task<IActionResult> OnGetAsync(
-            int? id, 
-            DateTime? duplicateDateError,
-            int? paymentPage,
-            int? billPage)
+        public async Task<IActionResult> OnGetAsync(int? id, DateTime? duplicateDateError, [FromQuery]BillPayPaging paging)
         {
             if (id == null)
             {
                 return NotFound();
             }
 
-            CurrentPaymentPage = paymentPage ?? 1;
-            CurrentBillPage = billPage ?? 1;
+            CurrentPaymentPage = paging.PaymentPage ?? 1;
+            CurrentBillPage = paging.BillPage ?? 1;
+            CurrentExpensePage = paging.ExpensePage ?? 1;
 
             if(duplicateDateError != null) DuplicateDateError = duplicateDateError;
 
-            BillPay = await _context.BillPay
-                .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
-                .FirstOrDefaultAsync(m => m.ID == id);
+            BillPay = await _billPayService.GetByIdAsync((int)id);
 
             if(BillPay == null) return NotFound();
             
             //Bills pagination
-            int totalUpcomingBills = await CountUpcomingBills();
-
+            int totalUpcomingBills = await _billService.CountUpcomingBillsAsync();
             TotalBillPages = (int)Math.Ceiling(((float)totalUpcomingBills / 20));
-            
-            UpcomingBills = await GetUpcomingBills((CurrentBillPage - 1) * 20, 20);
+            UpcomingBills = await _billService.GetUpcomingBillsAsync((CurrentBillPage - 1) * 20, 20);
             
             //Payments pagination
-            int totalPayments = await CountPaymentsByBillPay(BillPay.ID);
+            int totalPayments = await _paymentService.CountPaymentsByBillPayAsync(BillPay.ID);
+            TotalPaymentPages = (int)Math.Ceiling(((float)totalPayments / 8));
+            BillPay.Payments = 
+                await _paymentService.GetPaymentsByBillPayAsync(BillPay.ID, (CurrentPaymentPage - 1) * 8, 8);
 
-            TotalPaymentPages = (int)Math.Ceiling(((float)totalPayments / 15));
-
-            BillPay.Payments = await GetPaymentsByBillPay(BillPay.ID, (CurrentPaymentPage - 1) * 15, 15);
+            //Expenses pagination
+            int totalExpenses = await _expenseService.CountExpensesByBillPayAsync(BillPay.ID);
+            TotalExpensePages = (int)Math.Ceiling(((float)totalExpenses / 8));
+            BillPay.Expenses = await _expenseService.GetExpensesByBillPayAsync(BillPay.ID, (CurrentExpensePage - 1) * 8, 8);
 
             if (BillPay == null)
             {
@@ -186,27 +216,20 @@ namespace SimpleBillPay.Pages.BillPay
                 return Page();
             }
 
-            SimpleBillPay.Models.BillPay billPay = await _context.BillPay
-                .Include(b => b.User)
-                .Include(b => b.Payments)
-                    .ThenInclude(p => p.BillInstance)
-                .Where(b => b.User.UserName == HttpContext.User.Identity.Name)
-                .FirstOrDefaultAsync(m => m.ID == BillPay.ID);
+            SimpleBillPay.Models.BillPay billPay = await _billPayService.GetByIdAsync(BillPay.ID);
             
             if(billPay == null) return NotFound();
-
-            _context.Attach(billPay).State = EntityState.Modified;
 
             billPay.StartingAmount = BillPay.StartingAmount;
             billPay.BillPayDate = BillPay.BillPayDate;
 
             try
             {
-                await _context.SaveChangesAsync();
+                await _billPayService.UpdateBillPayAsync(billPay);
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!BillPayExists(BillPay.ID))
+                if (!await _billPayService.BillPayExistsAsync(BillPay.ID))
                 {
                     return NotFound();
                 }
@@ -230,13 +253,14 @@ namespace SimpleBillPay.Pages.BillPay
                     }
                 }
             }
-
             return RedirectToPage("./Edit", new {id = BillPay.ID});
         }
+    }
 
-        private bool BillPayExists(int id)
-        {
-            return _context.BillPay.Any(e => e.ID == id);
-        }
+    public class BillPayPaging
+    {
+        public int? PaymentPage { get; set; }
+        public int? BillPage { get; set; }
+        public int? ExpensePage { get; set; }
     }
 }

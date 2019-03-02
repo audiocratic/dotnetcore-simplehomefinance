@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SimpleBillPay;
 
 namespace SimpleBillPay.Migrations.Budget
 {
     [DbContext(typeof(BudgetContext))]
-    partial class BudgetContextModelSnapshot : ModelSnapshot
+    [Migration("20181220023141_AddExpenses")]
+    partial class AddExpenses
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -127,10 +129,7 @@ namespace SimpleBillPay.Migrations.Budget
 
                     b.Property<decimal>("Amount");
 
-                    b.Property<int?>("BillPayID")
-                        .IsRequired();
-
-                    b.Property<DateTime?>("DateConfirmed");
+                    b.Property<int?>("BillPayID");
 
                     b.Property<string>("Name")
                         .IsRequired();
@@ -193,9 +192,8 @@ namespace SimpleBillPay.Migrations.Budget
             modelBuilder.Entity("SimpleBillPay.Models.Expense", b =>
                 {
                     b.HasOne("SimpleBillPay.Models.BillPay", "BillPay")
-                        .WithMany("Expenses")
-                        .HasForeignKey("BillPayID")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .WithMany()
+                        .HasForeignKey("BillPayID");
                 });
 
             modelBuilder.Entity("SimpleBillPay.Models.Payment", b =>

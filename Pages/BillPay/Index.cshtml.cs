@@ -2,19 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SimpleBillPay;
 using SimpleBillPay.Models;
-using Microsoft.AspNetCore.Authorization;
+using SimpleBillPay.Services;
+
 
 namespace SimpleBillPay.Pages.BillPay
 {
     [Authorize]
-    public class IndexModel : BillPayPageModel
+    public class IndexModel : PageModel
     {
-        public IndexModel(SimpleBillPay.BudgetContext context) : base(context) {}
+        private readonly BillPayService _billPayService;
+        public IndexModel(BillPayService billPayService)
+        {
+            _billPayService = billPayService;
+        }
 
         public int TotalPages { get; set; }
         public int CurrentPage { get; set; }
@@ -45,12 +51,16 @@ namespace SimpleBillPay.Pages.BillPay
             switch(Direction)
             {
                 case ListDirection.FUTURE:
-                    BillPays = await GetScheduledBillPays(((int)pageNumber - 1) * 10, 10);
-                    TotalPages = (int)Math.Ceiling((double)await CountScheduledBillPays() / 10);
+                    BillPays = 
+                        await _billPayService.GetScheduledBillPaysAsync(((int)pageNumber - 1) * 10, 10);
+                    TotalPages = 
+                        (int)Math.Ceiling((double)await _billPayService.CountScheduledBillPaysAsync() / 10);
                     break;
                 case ListDirection.RETRO:
-                    BillPays = await GetHistoricalBillPays(((int)pageNumber - 1) * 10, 10);
-                    TotalPages = (int)Math.Ceiling((double)await CountHistoricalBillPays() / 10);
+                    BillPays = 
+                        await _billPayService.GetHistoricalBillPaysAsync(((int)pageNumber - 1) * 10, 10);
+                    TotalPages = 
+                        (int)Math.Ceiling((double)await _billPayService.CountHistoricalBillPaysAsync() / 10);
                     break;
             }
 

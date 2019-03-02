@@ -9,15 +9,19 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using SimpleBillPay;
 using SimpleBillPay.Models;
+using SimpleBillPay.Services;
 using SimpleBillPay.Pages.BillPay;
 
 namespace SimpleBillPay.Pages.Payments
 {
     [Authorize]
-    public class EditModel : BillPayPageModel
+    public class EditModel : PageModel
     {
-
-        public EditModel(SimpleBillPay.BudgetContext context) : base(context) {}
+        private readonly PaymentService _paymentService;
+        public EditModel(PaymentService paymentService) 
+        {
+            _paymentService = paymentService;
+        }
 
         [BindProperty]
         public Payment Payment { get; set; }
@@ -31,7 +35,7 @@ namespace SimpleBillPay.Pages.Payments
                 return NotFound();
             }
 
-            Payment = await GetPaymentById((int)id);
+            Payment = await _paymentService.GetPaymentByIdAsync((int)id);
 
             if (Payment == null)
             {
@@ -50,22 +54,20 @@ namespace SimpleBillPay.Pages.Payments
                 return Page();
             }
 
-            Payment payment = await GetPaymentById(Payment.ID);
+            Payment payment = await _paymentService.GetPaymentByIdAsync(Payment.ID);
 
             if(payment == null) return NotFound();
-
-            _context.Attach(payment).State = EntityState.Modified;
 
             payment.Amount = Payment.Amount;
             payment.DateConfirmed = Payment.DateConfirmed;
 
             try
             {
-                await _context.SaveChangesAsync();
+                await _paymentService.UpdateAsync(payment);
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!PaymentExists(Payment.ID))
+                if (!await _paymentService.PaymentExistsAsync(Payment.ID))
                 {
                     return NotFound();
                 }
@@ -83,9 +85,6 @@ namespace SimpleBillPay.Pages.Payments
             return RedirectToPage("./Index");
         }
 
-        private bool PaymentExists(int id)
-        {
-            return _context.Payments.Any(e => e.ID == id);
-        }
+        
     }
 }

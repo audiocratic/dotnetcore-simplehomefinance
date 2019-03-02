@@ -8,17 +8,18 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SimpleBillPay;
 using SimpleBillPay.Models;
+using SimpleBillPay.Services;
 
 namespace SimpleBillPay.Pages.Bills
 {
     [Authorize]
     public class DeleteModel : PageModel
     {
-        private readonly SimpleBillPay.BudgetContext _context;
+        private readonly BillService _billService;
 
-        public DeleteModel(SimpleBillPay.BudgetContext context)
+        public DeleteModel(BillService billService)
         {
-            _context = context;
+            _billService = billService;
         }
 
         [BindProperty]
@@ -31,11 +32,7 @@ namespace SimpleBillPay.Pages.Bills
                 return NotFound();
             }
 
-            BillInstance = await _context.BillInstance
-                .Include(b => b.BillTemplate)
-                .Include(b => b.BillTemplate.User)
-                .Where(b => b.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
-                .FirstOrDefaultAsync(b => b.ID == (int)id);
+            BillInstance = await _billService.GetBillInstanceAsync((int)id);
 
             if (BillInstance == null)
             {
@@ -51,16 +48,11 @@ namespace SimpleBillPay.Pages.Bills
                 return NotFound();
             }
 
-            BillInstance = await _context.BillInstance
-                .Include(b => b.BillTemplate)
-                .Include(b => b.BillTemplate.User)
-                .Where(b => b.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
-                .FirstOrDefaultAsync(b => b.ID == (int)id);
+            BillInstance = await _billService.GetBillInstanceAsync((int)id);
 
             if (BillInstance != null)
             {
-                _context.BillInstance.Remove(BillInstance);
-                await _context.SaveChangesAsync();
+                await _billService.RemoveAsync(BillInstance);
             }
 
             return RedirectToPage("./Index");

@@ -4,21 +4,27 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using SimpleBillPay;
 using SimpleBillPay.Models;
+using SimpleBillPay.Services;
 using SimpleBillPay.Areas.Identity.Data;
 
 namespace SimpleBillPay.Pages.Bills
 {
     [Authorize]
-    public class CreateModel : BillPageModel
+    public class CreateModel : PageModel
     {
+        private readonly BillService _billService;
+        private readonly UserManager<User> _userManager;
 
-        public CreateModel(SimpleBillPay.BudgetContext context) : base(context)
+        public CreateModel(BillService billService, UserManager<User> userManager)
         {
+            _billService = billService;
+            _userManager = userManager;
         }
 
         public int? ReturnBillPayID { get; set; }
@@ -33,6 +39,8 @@ namespace SimpleBillPay.Pages.Bills
         [BindProperty]
         public BillInstance BillInstance { get; set; }
 
+        
+
         public async Task<IActionResult> OnPostAsync(int? returnBillPayID)
         {
             if (!ModelState.IsValid)
@@ -40,28 +48,20 @@ namespace SimpleBillPay.Pages.Bills
                 return Page();
             }
 
-            //Get current user
-            string userName = HttpContext.User.Identity.Name;
-            SimpleBillPay.Areas.Identity.Data.User user = 
-                _context.AspNetUsers
-                    .Where( u => (u.UserName == userName)).FirstOrDefault();
-
             //Add user to this template
-            BillInstance.BillTemplate.User = user;
+            BillInstance.BillTemplate.User = await _userManager.GetUserAsync(HttpContext.User);
 
             //Bill instance amount should match template amount
             BillInstance.BillTemplate.Amount = BillInstance.Amount;
             BillInstance.Name = BillInstance.BillTemplate.Name;
 
-            _context.BillInstance.Add(BillInstance);
-
             if(BillInstance.BillTemplate.FrequencyInMonths > 0)
             {
-                CreateSeries(BillInstance);
+                await _billService.CreateSeriesAsync(BillInstance);
             }
             
             //Insert
-            await _context.SaveChangesAsync();
+            await _billService.AddAsync(BillInstance);
 
             if(returnBillPayID != null && returnBillPayID > 0)
             {

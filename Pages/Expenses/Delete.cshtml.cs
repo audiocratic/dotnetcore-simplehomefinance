@@ -2,28 +2,25 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SimpleBillPay;
 using SimpleBillPay.Models;
-using SimpleBillPay.Services;
 
-namespace SimpleBillPay.Pages.BillPay
+namespace SimpleBillPay.Pages.Expenses
 {
-    [Authorize]
     public class DeleteModel : PageModel
     {
-        private readonly BillPayService _billPayService;
+        private readonly SimpleBillPay.BudgetContext _context;
 
-        public DeleteModel(BillPayService billPayService)
+        public DeleteModel(SimpleBillPay.BudgetContext context)
         {
-            _billPayService = billPayService;
+            _context = context;
         }
 
         [BindProperty]
-        public SimpleBillPay.Models.BillPay BillPay { get; set; }
+        public Expense Expense { get; set; }
 
         public async Task<IActionResult> OnGetAsync(int? id)
         {
@@ -32,9 +29,10 @@ namespace SimpleBillPay.Pages.BillPay
                 return NotFound();
             }
 
-            BillPay = await _billPayService.GetByIdAsync((int)id);
+            Expense = await _context.Expenses
+                .Include(e => e.BillPay).FirstOrDefaultAsync(m => m.ID == id);
 
-            if (BillPay == null)
+            if (Expense == null)
             {
                 return NotFound();
             }
@@ -48,7 +46,13 @@ namespace SimpleBillPay.Pages.BillPay
                 return NotFound();
             }
 
-            await _billPayService.DeleteByIdAsync((int)id);
+            Expense = await _context.Expenses.FindAsync(id);
+
+            if (Expense != null)
+            {
+                _context.Expenses.Remove(Expense);
+                await _context.SaveChangesAsync();
+            }
 
             return RedirectToPage("./Index");
         }

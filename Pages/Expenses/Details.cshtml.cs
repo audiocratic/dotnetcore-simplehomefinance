@@ -2,27 +2,24 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SimpleBillPay;
 using SimpleBillPay.Models;
-using SimpleBillPay.Services;
 
-namespace SimpleBillPay.Pages.Payments
+namespace SimpleBillPay.Pages.Expenses
 {
-    [Authorize]
     public class DetailsModel : PageModel
     {
-        private readonly PaymentService _paymentService;
+        private readonly SimpleBillPay.BudgetContext _context;
 
-        public DetailsModel(PaymentService paymentService)
+        public DetailsModel(SimpleBillPay.BudgetContext context)
         {
-            _paymentService = paymentService;
+            _context = context;
         }
 
-        public Payment Payment { get; set; }
+        public Expense Expense { get; set; }
 
         public async Task<IActionResult> OnGetAsync(int? id)
         {
@@ -31,9 +28,10 @@ namespace SimpleBillPay.Pages.Payments
                 return NotFound();
             }
 
-            Payment = await _paymentService.GetPaymentByIdAsync((int)id);
+            Expense = await _context.Expenses
+                .Include(e => e.BillPay).FirstOrDefaultAsync(m => m.ID == id);
 
-            if (Payment == null)
+            if (Expense == null)
             {
                 return NotFound();
             }

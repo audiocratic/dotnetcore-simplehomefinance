@@ -8,17 +8,18 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SimpleBillPay;
 using SimpleBillPay.Models;
+using SimpleBillPay.Services;
 
 namespace SimpleBillPay.Pages.Bills
 {
     [Authorize]
     public class DetailsModel : PageModel
     {
-        private readonly SimpleBillPay.BudgetContext _context;
+        private readonly BillService _billService;
 
-        public DetailsModel(SimpleBillPay.BudgetContext context)
+        public DetailsModel(BillService billService)
         {
-            _context = context;
+            _billService = billService;
         }
 
         public BillInstance BillInstance { get; set; }
@@ -30,11 +31,7 @@ namespace SimpleBillPay.Pages.Bills
                 return NotFound();
             }
 
-            BillInstance = await _context.BillInstance
-                .Include(b => b.BillTemplate)
-                .Include(b => b.BillTemplate.User)
-                .Where(b => b.BillTemplate.User.UserName == HttpContext.User.Identity.Name)
-                .FirstOrDefaultAsync(m => m.ID == id);
+            BillInstance = await _billService.GetBillInstanceAsync((int)id);
 
             if (BillInstance == null)
             {

@@ -4,27 +4,31 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using SimpleBillPay;
 using SimpleBillPay.Models;
+using SimpleBillPay.Services;
 using SimpleBillPay.Areas.Identity.Data;
 
 namespace SimpleBillPay.Pages.Bills
 {
     [Authorize]
-    public class IndexModel : BillPageModel
+    public class IndexModel : PageModel
     {
+        private readonly BillService _billService;
+        
         public int PageNumber { get; set; }
         public int TotalBills { get; set; }
         
-        public IndexModel(SimpleBillPay.BudgetContext context) : base(context)
+        public IndexModel(BillService billService)
         {
-
+            _billService = billService;
         }
 
-        public IList<BillInstance> BillInstance { get; set; }
+        public IList<BillInstance> BillInstances { get; set; }
 
         public async Task OnGetAsync(int? pageNumber)
         {
@@ -34,28 +38,13 @@ namespace SimpleBillPay.Pages.Bills
             if(pageNumber < 1) pageNumber = 1;
             PageNumber = (int)pageNumber;
 
-            //Get current user
-            string userName = HttpContext.User.Identity.Name;
-            SimpleBillPay.Areas.Identity.Data.User user = 
-                _context.AspNetUsers
-                    .Where( u => (u.UserName == userName)).FirstOrDefault();
+            TotalBills = await _billService.CountBillsOnOrBeforeDueDateAsync(DateTime.Today.AddYears(5));
 
-            TotalBills = _context.BillInstance
-                .Include(b => b.BillTemplate)
-                .Where(b => 
-                        b.BillTemplate.User.UserName == user.UserName
-                    &&  b.DueDate <= DateTime.Today.AddYears(5)
-                )
-                .Count();
-
-            BillInstance = await _context.BillInstance
-                .Include(b => b.BillTemplate)
-                .Where(b => 
-                        b.BillTemplate.User.UserName == user.UserName
-                    &&  b.DueDate <= DateTime.Today.AddYears(5))
-                .OrderBy(b => b.DueDate)
-                .Skip((PageNumber - 1) * 50).Take(50)
-                .ToListAsync();
+            BillInstances = await _billService.GetBillsOnOrBeforeDueDateAsync(
+                DateTime.Today.AddYears(5),
+                (PageNumber - 1) * 50,
+                50
+            );
         }
     }
 }

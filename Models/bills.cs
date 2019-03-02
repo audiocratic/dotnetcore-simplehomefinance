@@ -32,13 +32,10 @@ namespace SimpleBillPay.Models
         public IList<Payment> Payments { get; set; }
     }
 
-    public class Payment
+    public class Expenditure 
     {
         public int ID { get; set; }
         public decimal Amount { get; set; }
-        public int BillInstanceID { get; set; }
-        public virtual BillInstance BillInstance { get; set; }
-        public DateTime PaymentDate { get; set; }
         public DateTime? DateConfirmed { get; set; }
         public int? BillPayID { get; set; }
         public BillPay BillPay { get; set; }
@@ -58,6 +55,13 @@ namespace SimpleBillPay.Models
                 return confirmed;
             }
         }
+    }
+
+    public class Payment : Expenditure
+    {
+        public int BillInstanceID { get; set; }
+        public virtual BillInstance BillInstance { get; set; }
+        public DateTime PaymentDate { get; set; }
         
         [NotMapped]
         public decimal PriorBalance
@@ -84,12 +88,18 @@ namespace SimpleBillPay.Models
         }
     }
 
+    public class Expense : Expenditure
+    {
+        public string Name { get; set; }
+    }
+
     public class BillPay 
     {
         public int ID { get; set; }
         public DateTime BillPayDate { get; set; }
         public decimal StartingAmount { get; set; }
         public List<Payment> Payments { get; set; }
+        public List<Expense> Expenses { get; set; }        
         public string UserId { get; set; }
         public virtual User User { get; set; }
 
@@ -108,7 +118,8 @@ namespace SimpleBillPay.Models
                 return amount;
             }
         }
-
     }
+
+
 }
 

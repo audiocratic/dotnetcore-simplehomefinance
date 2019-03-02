@@ -54,7 +54,7 @@
                         <div class="panel-body text-center">
                             <h4>
                                 @( (Model.BillPay.StartingAmount - 
-                                await Model.GetSumOfPaymentsByBillPay(Model.BillPay.ID)).ToString("0.00") )
+                                Model.BillPay.Payments.Sum(p => p.Amount)).ToString("0.00") )
                             </h4>
                         </div>
                     </div>
@@ -64,7 +64,7 @@
                 <input type="submit" value="Save" class="btn btn-primary" />
             </div>
             <div class="row spacer-sm">
-                <h2>Scheduled Payments</h2>
+                <h2>Scheduled Bill Payments</h2>
                 <table class="table">
                     <tr>
                         <th></th>
@@ -74,33 +74,21 @@
                         <th>Payment Amount</th>
                         <th></th>
                     </tr>
-                    @{ int i = 0; }
                     @foreach(SimpleBillPay.Models.Payment payment in Model.BillPay.Payments.OrderBy(p => p.BillInstance.DueDate).ToList())
                     {
                         <tr @Html.Raw((payment.IsConfirmed ? "class=\"success\"" : ""))>
                             <td>
-                            @if(!payment.IsConfirmed)
-                            {
                                 <button
-                                    class="btn btn-success" 
+                                    class="btn btn-@Html.Raw( !payment.IsConfirmed ? "success" : "default" )" 
                                     formmethod="post"
                                     asp-page-handler="ConfirmPayment" 
                                     asp-route-paymentID=@payment.ID
+                                    asp-route-paymentpage=@Model.CurrentPaymentPage
+                                    asp-route-billpage=@Model.CurrentBillPage
+                                    asp-route-expensepage=@Model.CurrentExpensePage
                                     asp-route-billPayID=@Model.BillPay.ID>
-                                    <span class="glyphicon glyphicon-check"></span>
+                                    <span class="glyphicon glyphicon-@Html.Raw( !payment.IsConfirmed ? "check" : "remove" )"></span>
                                 </button>
-                            }
-                            else
-                            {
-                                <button
-                                    class="btn btn-default" 
-                                    formmethod="post"
-                                    asp-page-handler="ConfirmPayment" 
-                                    asp-route-paymentID=@payment.ID
-                                    asp-route-billPayID=@Model.BillPay.ID>
-                                    <span class="glyphicon glyphicon-remove"></span>
-                                </button>
-                            }
                             </td>
                             <td>@payment.BillInstance.DueDate.ToString("MM/dd/yyyy")</td>
                             <td>@payment.BillInstance.Name</td>
@@ -134,12 +122,10 @@
                                 </button>
                                 <input 
                                     type="hidden"
-                                    asp-for="BillPay.Payments[i].ID"
+                                    asp-for=@payment.ID
                                     value=@payment.ID />
                             </td>
                         </tr>
-
-                        i++;
                     }
                 </table>
             @if(Model.BillPay.Payments == null || Model.BillPay.Payments.Count == 0)
@@ -166,6 +152,67 @@
                     <span class="glyphicon glyphicon-menu-right"></span>
                 </a>
             }
+            </div>
+            <div class="row spacer-sm">
+                <h2>Scheduled Expenses</h2>
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach(SimpleBillPay.Models.Expense expense in Model.BillPay.Expenses)
+                    {
+                        <tr @Html.Raw((expense.IsConfirmed ? "class=\"success\"" : ""))>
+                            <td>
+                                <button
+                                    class="btn btn-@Html.Raw( !expense.IsConfirmed ? "success" : "default" )" 
+                                    formmethod="post"
+                                    asp-page-handler="ConfirmPayment" 
+                                    asp-route-expenseID=@expense.ID
+                                    asp-route-paymentpage=@Model.CurrentPaymentPage
+                                    asp-route-billpage=@Model.CurrentBillPage
+                                    asp-route-expensepage=@Model.CurrentExpensePage
+                                    asp-route-billPayID=@Model.BillPay.ID>
+                                    <span class="glyphicon glyphicon-@Html.Raw( !expense.IsConfirmed ? "check" : "remove" )"></span>
+                                </button>
+                            </td>
+                            <td>@expense.Name</td>
+                            <td>
+                                @expense.Amount.ToString("0.00")
+                            </td>
+                            <td>
+                                <a 
+                                    class="btn btn-warning" 
+                                    asp-page="/Payments/Edit" 
+                                    asp-route-id=@expense.ID
+                                    asp-route-returnbillpayid=@Model.BillPay.ID>
+                                    <span class="glyphicon glyphicon-pencil"></span>
+                                </a>
+                            </td>
+                            <td>
+                                <button
+                                    class="btn btn-danger" 
+                                    formmethod="post"
+                                    asp-page-handler="RemovePayment" 
+                                    asp-route-paymentID=@expense.ID
+                                    asp-route-billPayID=@Model.BillPay.ID
+                                    value="Remove" >
+                                    <span class="glyphicon glyphicon-trash"></span>
+                                </button>
+                                <input 
+                                    type="hidden"
+                                    asp-for=@expense.ID
+                                    value=@expense.ID />
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
             </div>
         </form>
     </div>

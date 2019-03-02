@@ -12,15 +12,23 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using MySql.Data.MySqlClient;
+using SimpleBillPay.Areas.Identity.Data;
+using SimpleBillPay.Services;
 
 
 namespace SimpleBillPay.Pages.BillPay
 {
     [Authorize]
-    public class CreateModel : BillPayPageModel
+    public class CreateModel : PageModel
     {
+        private readonly UserManager<User> _userManager;
+        private readonly BillPayService _billPayService;
 
-        public CreateModel (SimpleBillPay.BudgetContext context) : base(context){}
+        public CreateModel (UserManager<User> userManager, BillPayService billPayService)
+        {
+            _userManager = userManager;
+            _billPayService = billPayService;
+        }
 
         public IActionResult OnGet()
         {
@@ -38,16 +46,11 @@ namespace SimpleBillPay.Pages.BillPay
                 return Page();
             }
 
-            BillPay.User = 
-                _context.AspNetUsers
-                .Where(u => u.UserName == HttpContext.User.Identity.Name)
-                .FirstOrDefault();
-
-            _context.BillPay.Add(BillPay);
+            BillPay.User = await _userManager.GetUserAsync(HttpContext.User);
 
             try
             {
-                await _context.SaveChangesAsync();
+                await _billPayService.AddAsync(BillPay);
             }
             catch(DbUpdateException ex)
             {

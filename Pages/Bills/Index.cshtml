@@ -14,19 +14,19 @@
     <thead>
         <tr>
             <th>
-                @Html.DisplayNameFor(model => model.BillInstance[0].BillTemplate.Name)
+                @Html.DisplayNameFor(model => model.BillInstances[0].BillTemplate.Name)
             </th>
             <th>
                 Due Date
             </th>
             <th>
-                @Html.DisplayNameFor(model => model.BillInstance[0].BillTemplate.Amount)
+                @Html.DisplayNameFor(model => model.BillInstances[0].BillTemplate.Amount)
             </th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model.BillInstance) {
+@foreach (var item in Model.BillInstances) {
         <tr>
             <td>
                 @Html.DisplayFor(modelItem => item.BillTemplate.Name)
